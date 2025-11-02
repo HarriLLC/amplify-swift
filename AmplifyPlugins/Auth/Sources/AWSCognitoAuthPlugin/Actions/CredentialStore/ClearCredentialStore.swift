@@ -13,6 +13,7 @@ struct ClearCredentialStore: Action {
     let identifier = "ClearCredentialStore"
 
     let dataStoreType: CredentialStoreDataType
+    let key: String?
 
     func execute(withDispatcher dispatcher: EventDispatcher, environment: Environment) async {
 
@@ -34,6 +35,11 @@ struct ClearCredentialStore: Action {
             switch dataStoreType {
             case .amplifyCredentials:
                 try amplifyCredentialStore.deleteCredential()
+                
+                if let key = self.key {
+                    try? amplifyCredentialStore.deleteCredential(key: key)
+                }
+                
                 dataType = .amplifyCredentials
             case .deviceMetadata(let username):
                 try amplifyCredentialStore.removeDevice(for: username)

@@ -26,6 +26,7 @@ class AWSCognitoAuthClientBehaviorTests: XCTestCase {
                     cognitoUserPoolTokens: AWSCognitoUserPoolTokens.testData
                 )),
             AuthorizationState.sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
     }

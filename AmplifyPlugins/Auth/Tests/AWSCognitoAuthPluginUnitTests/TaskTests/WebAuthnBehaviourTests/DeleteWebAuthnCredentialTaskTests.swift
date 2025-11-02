@@ -43,6 +43,7 @@ class DeleteWebAuthnCredentialTaskTests: XCTestCase {
                 )
             ),
             .sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 

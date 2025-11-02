@@ -19,7 +19,7 @@ class AWSAuthSignUpAPITests: BasePluginTest {
     ])
 
     override var initialState: AuthState {
-        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
     }
 
     /// Given: Configured auth machine in `.notStarted` sign up states and a mocked success response
@@ -67,7 +67,8 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateAwaitingUserConfirmation = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser()))
+            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser())),
+            .notStarted
         )
 
 
@@ -106,7 +107,8 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateSignedUp = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .signedUp(.init(username: "user1"), .init(.done))
+            .signedUp(.init(username: "user1"), .init(.done)),
+            .notStarted
         )
 
 
@@ -145,7 +147,8 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateError = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .error(.service(error: AuthError.service("Unknown error", "Unknown error")))
+            .error(.service(error: AuthError.service("Unknown error", "Unknown error"))),
+            .notStarted
         )
 
         let authPluginError = configureCustomPluginWith(
@@ -210,7 +213,8 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateAwaitingUserConfirmation = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser()))
+            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser())),
+            .notStarted
         )
 
 
@@ -248,7 +252,8 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateSignedUp = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .signedUp(.init(username: "user1"), .init(.done))
+            .signedUp(.init(username: "user1"), .init(.done)),
+            .notStarted
         )
 
 
@@ -286,7 +291,8 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateError = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .error(.service(error: AuthError.service("Unknown error", "Unknown error")))
+            .error(.service(error: AuthError.service("Unknown error", "Unknown error"))),
+            .notStarted
         )
 
         let authPluginError = configureCustomPluginWith(

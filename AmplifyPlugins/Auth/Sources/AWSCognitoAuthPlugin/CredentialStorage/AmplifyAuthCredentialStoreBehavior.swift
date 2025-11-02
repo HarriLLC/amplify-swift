@@ -9,8 +9,13 @@ import Foundation
 
 protocol AmplifyAuthCredentialStoreBehavior {
     func saveCredential(_ credential: AmplifyCredentials) throws
+    func saveCredential(_ credential: AmplifyCredentials, key: String) throws
+
     func retrieveCredential() throws -> AmplifyCredentials
+    func retrieveCredential(key: String) throws -> AmplifyCredentials
+
     func deleteCredential() throws
+    func deleteCredential(key: String) throws
 
     func saveDevice(_ deviceMetadata: DeviceMetadata, for username: String) throws
     func retrieveDevice(for username: String) throws -> DeviceMetadata

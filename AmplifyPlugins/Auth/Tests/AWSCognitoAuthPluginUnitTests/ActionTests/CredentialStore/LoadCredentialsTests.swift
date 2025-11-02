@@ -53,7 +53,7 @@ class LoadCredentialsTests: XCTestCase {
             logger: Amplify.Logging.logger(forCategory: "awsCognitoAuthPluginTest")
         )
 
-        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials)
+        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials, key: nil)
         await action.execute(withDispatcher: MockDispatcher { event in
 
             guard let event = event as? CredentialStoreEvent else {
@@ -92,7 +92,7 @@ class LoadCredentialsTests: XCTestCase {
 
         let environment = MockInvalidEnvironment()
 
-        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials)
+        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials, key: nil)
         await action.execute(withDispatcher: MockDispatcher { event in
 
             guard let event = event as? CredentialStoreEvent else {
@@ -154,7 +154,7 @@ class LoadCredentialsTests: XCTestCase {
             logger: Amplify.Logging.logger(forCategory: "awsCognitoAuthPluginTest")
         )
 
-        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials)
+        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials, key: nil)
         await action.execute(withDispatcher: MockDispatcher { event in
 
             guard let event = event as? CredentialStoreEvent else {
@@ -217,7 +217,7 @@ class LoadCredentialsTests: XCTestCase {
             logger: Amplify.Logging.logger(forCategory: "awsCognitoAuthPluginTest")
         )
 
-        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials)
+        let action = LoadCredentialStore(credentialStoreType: .amplifyCredentials, key: nil)
         await action.execute(withDispatcher: MockDispatcher { event in
 
             guard let event = event as? CredentialStoreEvent else {

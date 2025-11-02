@@ -28,6 +28,7 @@ extension AuthState: Codable {
             self = .configured(
                 authenticationState,
                 authorizationState,
+                .notStarted,
                 .notStarted
             )
         } else {
@@ -37,7 +38,7 @@ extension AuthState: Codable {
 
     public func encode(to encoder: Encoder) throws {
         switch self {
-        case .configured(let authenticationState, let authorizationState, let signUpState):
+        case .configured(let authenticationState, let authorizationState, let signUpState, _):
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(authenticationState, forKey: .authenticationState)
             try container.encode(authorizationState, forKey: .authorizationState)

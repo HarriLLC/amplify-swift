@@ -180,6 +180,11 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
         try keychain._set(encodedCredentials, key: authCredentialStoreKey)
     }
 
+    func saveCredential(_ credential: AmplifyCredentials, key: String) throws {
+        let encodedCredentials = try encode(object: credential)
+        try keychain._set(encodedCredentials, key: key)
+    }
+    
     func retrieveCredential() throws -> AmplifyCredentials {
         let authCredentialStoreKey = generateSessionKey(for: authConfiguration)
         let authCredentialData = try keychain._getData(authCredentialStoreKey)
@@ -187,11 +192,21 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
         return amplifyCredential
     }
 
+    func retrieveCredential(key: String) throws -> AmplifyCredentials {
+        let authCredentialData = try keychain._getData(key)
+        let amplifyCredential: AmplifyCredentials = try decode(data: authCredentialData)
+        return amplifyCredential
+    }
+    
     func deleteCredential() throws {
         let authCredentialStoreKey = generateSessionKey(for: authConfiguration)
         try keychain._remove(authCredentialStoreKey)
     }
 
+    func deleteCredential(key: String) throws {
+        try keychain._remove(key)
+    }
+    
     func saveDevice(_ deviceMetadata: DeviceMetadata, for username: String) throws {
         let key = generateDeviceMetadataKey(for: username, with: authConfiguration)
         let encodedMetadata = try encode(object: deviceMetadata)

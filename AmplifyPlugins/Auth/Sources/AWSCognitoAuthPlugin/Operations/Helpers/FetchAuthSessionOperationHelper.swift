@@ -20,7 +20,7 @@ class FetchAuthSessionOperationHelper {
         forceRefresh: Bool = false
     ) async throws -> AuthSession {
         let state = await authStateMachine.currentState
-        guard case .configured(_, let authorizationState, _) = state  else {
+        guard case .configured(_, let authorizationState, _, _) = state  else {
             let message = "Auth state machine not in configured state: \(state)"
             let error = AuthError.invalidState(message, "", nil)
             throw error
@@ -95,7 +95,7 @@ class FetchAuthSessionOperationHelper {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Waiting for session to establish")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, let authorizationState, _) = state  else {
+            guard case .configured(let authenticationState, let authorizationState, _, _) = state  else {
                 let message = "Auth state machine not in configured state: \(state)"
                 let error = AuthError.invalidState(message, "", nil)
                 throw error

@@ -29,6 +29,26 @@ extension AWSCognitoAuthPlugin: AuthCategoryBehavior {
         } as! AuthSignUpResult
     }
 
+    public func prepareForNewUser() async throws -> AuthPrepareUserSwitchResult {
+        
+        let task = AWSPrepareUserSwitchTask(
+            authStateMachine: authStateMachine,
+            configuration: authConfiguration)
+        return try await taskQueue.sync {
+            return try await task.execute()
+        } as! AuthPrepareUserSwitchResult
+    }
+    
+    public func switchToUser(key: String) async throws -> any AuthPrepareUserSwitchResult {
+        
+        let task = AWSSwitchToUserTask(
+            authStateMachine: authStateMachine,
+            configuration: authConfiguration, userKey: key)
+        return try await taskQueue.sync {
+            return try await task.execute()
+        } as! AuthPrepareUserSwitchResult
+    }
+    
     public func confirmSignUp(
         for username: String,
         confirmationCode: String,

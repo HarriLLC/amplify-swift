@@ -232,7 +232,7 @@ enum Defaults {
 
         let authNState: AuthenticationState = .signedIn(signedInData)
         let authZState: AuthorizationState = .configured
-        let authState: AuthState = .configured(authNState, authZState, .notStarted)
+        let authState: AuthState = .configured(authNState, authZState, .notStarted, .notStarted)
 
         return authState
     }
@@ -291,6 +291,38 @@ struct MockCredentialStoreOperationClient: CredentialStoreStateBehavior {
         }
     }
 
+    func fetchData(type: CredentialStoreDataType, key: String) async throws -> CredentialStoreData {
+        
+        do {
+            switch type {
+            case .amplifyCredentials:
+                let amplifyCredentials = try mockAmplifyStore.retrieveCredential()
+                return .amplifyCredentials(amplifyCredentials)
+            case .deviceMetadata(username: let username):
+                let deviceMetadata = try mockAmplifyStore.retrieveDevice(for: username)
+                return .deviceMetadata(deviceMetadata, username)
+            case .asfDeviceId(username: let username):
+                let device = try mockAmplifyStore.retrieveASFDevice(for: username)
+                return .asfDeviceId(device, username)
+            }
+        } catch KeychainStoreError.itemNotFound {
+            switch type {
+            case .amplifyCredentials:
+                return .amplifyCredentials(.testData)
+            case .deviceMetadata(username: let username):
+                return .deviceMetadata(.metadata(.init(
+                    deviceKey: "key",
+                    deviceGroupKey: "key",
+                    deviceSecret: "secret"
+                )), username)
+            case .asfDeviceId(username: let username):
+                return .asfDeviceId("id", username)
+            }
+        } catch {
+            fatalError()
+        }
+    }
+    
     func storeData(data: CredentialStoreData) async throws {
         switch data {
         case .amplifyCredentials(let amplifyCredentials):
@@ -302,12 +334,28 @@ struct MockCredentialStoreOperationClient: CredentialStoreStateBehavior {
         }
     }
 
+    func storeData(data: CredentialStoreData, key: String) async throws {
+        switch data {
+        case .amplifyCredentials(let amplifyCredentials):
+            try mockAmplifyStore.saveCredential(amplifyCredentials)
+        case .deviceMetadata(let deviceMetadata, let username):
+            try mockAmplifyStore.saveDevice(deviceMetadata, for: username)
+        case .asfDeviceId(let string, let username):
+            try mockAmplifyStore.saveASFDevice(string, for: username)
+        }
+    }
+    
     func deleteData(type: CredentialStoreDataType) async throws {
 
+    }
+    
+    func deleteData(type: CredentialStoreDataType, key: String) async throws {
+        
     }
 }
 
 class MockAmplifyStore: AmplifyAuthCredentialStoreBehavior {
+
     let credentialsKey = "amplifyCredentials"
     static var dict = AtomicDictionary<String, Data>()
 
@@ -316,6 +364,8 @@ class MockAmplifyStore: AmplifyAuthCredentialStoreBehavior {
         Self.dict.set(value: value, forKey: credentialsKey)
     }
 
+    func saveCredential(_ credential: AmplifyCredentials, key: String) throws { }
+    
     func retrieveCredential() throws -> AmplifyCredentials {
         guard let data = Self.dict.getValue(forKey: credentialsKey),
               let cred = (try? JSONDecoder().decode(AmplifyCredentials.self, from: data))
@@ -325,10 +375,21 @@ class MockAmplifyStore: AmplifyAuthCredentialStoreBehavior {
         return cred
     }
 
+    func retrieveCredential(key: String) throws -> AmplifyCredentials {
+        guard let data = Self.dict.getValue(forKey: credentialsKey),
+              let cred = (try? JSONDecoder().decode(AmplifyCredentials.self, from: data))
+        else {
+            throw KeychainStoreError.itemNotFound
+        }
+        return cred
+    }
+    
     func deleteCredential() throws {
         Self.dict.removeValue(forKey: credentialsKey)
     }
 
+    func deleteCredential(key: String) throws { }
+    
     func getKeychainStore() -> KeychainStoreBehavior {
         return MockLegacyStore()
     }
