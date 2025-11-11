@@ -46,7 +46,7 @@ extension SwitchUserState {
                 
             case .storingCurrentSession(let signedInData):
                 
-                if case SwitchUserEvent.EventType.credentialsStored(let key) = switchEvent.eventType {
+                if case SwitchUserEvent.EventType.credentialsStored = switchEvent.eventType {
                     return self.resolveSessionStoredState(signedInData)
                 }
                 return .from(oldState)
@@ -61,7 +61,7 @@ extension SwitchUserState {
                 return .from(oldState)
             case .retrieveUser:
             
-                if case SwitchUserEvent.EventType.credentialsStored(_) = switchEvent.eventType {
+                if case SwitchUserEvent.EventType.credentialsStored = switchEvent.eventType {
                     return .init(newState: .sessionEstablished)
                 }
                 

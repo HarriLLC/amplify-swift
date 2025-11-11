@@ -91,12 +91,14 @@ class AWSSwitchToUserTask: DefaultLogger {
             switch authenticationState {
             case .signedOut:
                 return
-            case .signedIn, .signingIn:
+            case .signedIn:
                 let error = AuthError.invalidState(
                     "There is already a user in signedIn state. SignOut the user first before calling switch to user",
                     AuthPluginErrorConstants.invalidStateError, nil
                 )
                 throw error
+            case .signingIn:
+                await self.sendCancelSignInEvent()
             default:
                 let error = AuthError.invalidState(
                     "Invalid state",
@@ -105,6 +107,11 @@ class AWSSwitchToUserTask: DefaultLogger {
                 throw error
             }
         }
+    }
+    
+    private func sendCancelSignInEvent() async {
+        let event = AuthenticationEvent(eventType: .cancelSignIn)
+        await authStateMachine.send(event)
     }
     
     private func sendSwitchToUserEvent() async {

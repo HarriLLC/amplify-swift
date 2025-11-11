@@ -84,12 +84,20 @@ class AWSPrepareUserSwitchTask: DefaultLogger {
             }
 
             switch authenticationState {
-            case .signedOut, .configured, .signingIn:
+            case .configured:
                 let error = AuthError.invalidState(
                     "Sign In the user first before calling Switch",
                     AuthPluginErrorConstants.invalidStateError, nil
                 )
                 throw error
+            case .signedOut:
+                let error = AuthError.swithToUserAlreadyPrepared(
+                    "Authentication state already signed out and ready to be switched to another session",
+                    AuthPluginErrorConstants.prepareUserSwitchInvalidStateError, nil
+                )
+                throw error
+            case .signingIn:
+                await self.sendCancelSignInEvent()
             case .signedIn:
                 return
             default:
@@ -102,6 +110,11 @@ class AWSPrepareUserSwitchTask: DefaultLogger {
         }
     }
 
+    private func sendCancelSignInEvent() async {
+        let event = AuthenticationEvent(eventType: .cancelSignIn)
+        await authStateMachine.send(event)
+    }
+    
     private func sendPrepareForUserSwitchEvent() async {
         let event = SwitchUserEvent(eventType: .prepareForUserSwitch)
         await authStateMachine.send(event)
