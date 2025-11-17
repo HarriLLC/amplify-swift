@@ -39,13 +39,19 @@ extension SwitchUserState {
                 return .from(oldState)
             case .fetchingCurrentSession:
                 
-                if case SwitchUserEvent.EventType.credentialsFetched(let amplifyCredentials, _, let isSigningIn) = switchEvent.eventType, case AmplifyCredentials.userPoolOnly(let signedInData) = amplifyCredentials, !isSigningIn {
+                if case SwitchUserEvent.EventType.switchUserError(let error) = switchEvent.eventType {
+                    return .init(newState: .error(AuthenticationError.configuration(message: error.errorDescription)))
+                }
+                else if case SwitchUserEvent.EventType.credentialsFetched(let amplifyCredentials, _, let isSigningIn) = switchEvent.eventType, case AmplifyCredentials.userPoolOnly(let signedInData) = amplifyCredentials, !isSigningIn {
                     return self.resolveCredintailsFetchedState(signedInData: signedInData)
                 }
                 return .from(oldState)
                 
             case .storingCurrentSession(let signedInData):
                 
+                if case SwitchUserEvent.EventType.switchUserError(let error) = switchEvent.eventType {
+                    return .init(newState: .error(AuthenticationError.configuration(message: error.errorDescription)))
+                }
                 if case SwitchUserEvent.EventType.credentialsStored = switchEvent.eventType {
                     return self.resolveSessionStoredState(signedInData)
                 }
@@ -60,8 +66,10 @@ extension SwitchUserState {
                 }
                 return .from(oldState)
             case .retrieveUser:
-            
-                if case SwitchUserEvent.EventType.credentialsStored = switchEvent.eventType {
+                if case SwitchUserEvent.EventType.switchUserError(let error) = switchEvent.eventType {
+                    return .init(newState: .error(AuthenticationError.configuration(message: error.errorDescription)))
+                }
+                else if case SwitchUserEvent.EventType.credentialsStored = switchEvent.eventType {
                     return .init(newState: .sessionEstablished)
                 }
                 
@@ -71,7 +79,6 @@ extension SwitchUserState {
             case .error:
                 return .from(oldState)
             }
-            return .from(oldState)
         }
 
         private func resolveNotStartedState() -> StateResolution<StateType> {
