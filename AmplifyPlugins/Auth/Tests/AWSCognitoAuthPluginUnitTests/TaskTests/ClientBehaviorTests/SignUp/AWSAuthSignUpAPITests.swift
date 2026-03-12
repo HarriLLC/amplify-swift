@@ -19,7 +19,7 @@ class AWSAuthSignUpAPITests: BasePluginTest {
     ])
 
     override var initialState: AuthState {
-        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
+        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
     }
 
     /// Given: Configured auth machine in `.notStarted` sign up states and a mocked success response
@@ -67,8 +67,7 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateAwaitingUserConfirmation = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser())),
-            .notStarted
+            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser()))
         )
 
 
@@ -107,8 +106,7 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateSignedUp = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .signedUp(.init(username: "user1"), .init(.done)),
-            .notStarted
+            .signedUp(.init(username: "user1"), .init(.done))
         )
 
 
@@ -147,8 +145,10 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateError = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .error(.service(error: AuthError.service("Unknown error", "Unknown error"))),
-            .notStarted
+            .error(
+                .service(error: AuthError.service("Unknown error", "Unknown error")),
+                .init(username: "username", session: "sessio")
+            )
         )
 
         let authPluginError = configureCustomPluginWith(
@@ -213,8 +213,7 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateAwaitingUserConfirmation = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser())),
-            .notStarted
+            .awaitingUserConfirmation(.init(username: "user1"), .init(.confirmUser()))
         )
 
 
@@ -252,8 +251,7 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateSignedUp = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .signedUp(.init(username: "user1"), .init(.done)),
-            .notStarted
+            .signedUp(.init(username: "user1"), .init(.done))
         )
 
 
@@ -291,8 +289,10 @@ class AWSAuthSignUpAPITests: BasePluginTest {
         let initialStateError = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .error(.service(error: AuthError.service("Unknown error", "Unknown error"))),
-            .notStarted
+            .error(
+                .service(error: AuthError.service("Unknown error", "Unknown error")),
+                .init(username: "username", session: "sessio")
+            )
         )
 
         let authPluginError = configureCustomPluginWith(
@@ -954,4 +954,165 @@ class AWSAuthSignUpAPITests: BasePluginTest {
                 XCTAssertEqual(awsCognitoAuthError, expectedCognitoError)
             }
         }
+
+    // MARK: - Session Caching in Error State Tests
+
+    /// Given: Configured auth machine in `.error` sign up state with cached session data
+    /// When: Sign up transitions to error state during initiation
+    /// Then: The session data is preserved in the error state
+    func testSessionPreservedInErrorStateDuringSignUp() async throws {
+        let mockIdentityProvider = MockIdentityProvider(
+            mockSignUpResponse: { _ in
+                throw AWSCognitoIdentityProvider.UsernameExistsException()
+            }
+        )
+
+        let authPlugin = configureCustomPluginWith(
+            userPool: { mockIdentityProvider },
+            initialState: initialState
+        )
+
+        do {
+            _ = try await authPlugin.signUp(
+                username: "jeffb",
+                password: "Valid&99",
+                options: options
+            )
+            XCTFail("Should throw error")
+        } catch {
+            guard let authError = error as? AuthError else {
+                XCTFail("Should throw Auth error")
+                return
+            }
+
+            guard case .service = authError else {
+                XCTFail("Auth error should be of type service error")
+                return
+            }
+
+            // Verify the state machine is now in error state
+            let currentState = await authPlugin.authStateMachine.currentState
+            guard case .configured(_, _, let signUpState) = currentState else {
+                XCTFail("Should be in configured state")
+                return
+            }
+
+            guard case .error(_, let data) = signUpState else {
+                XCTFail("Should be in error state")
+                return
+            }
+
+            // Verify username is preserved in error state
+            XCTAssertEqual(data.username, "jeffb")
+        }
+    }
+
+    /// Given: Configured auth machine in `.error` sign up state
+    /// When: A new sign up is initiated
+    /// Then: The error state is cleared and new sign up proceeds
+    func testSignUpFromErrorStateStartsNewFlow() async throws {
+        let mockIdentityProvider = MockIdentityProvider(
+            mockSignUpResponse: { _ in
+                return .init(
+                    codeDeliveryDetails: .init(
+                        attributeName: "email",
+                        deliveryMedium: .email,
+                        destination: "test@example.com"
+                    ),
+                    userConfirmed: false,
+                    userSub: UUID().uuidString
+                )
+            }
+        )
+
+        let initialStateError = AuthState.configured(
+            .signedOut(.init(lastKnownUserName: nil)),
+            .configured,
+            .error(
+                .service(error: AuthError.service("Previous error", "Recovery")),
+                .init(username: "old-user", session: "old-session")
+            )
+        )
+
+        let authPluginError = configureCustomPluginWith(
+            userPool: { mockIdentityProvider },
+            initialState: initialStateError
+        )
+
+        let result = try await authPluginError.signUp(
+            username: "new-user",
+            password: "Valid&99",
+            options: options
+        )
+
+        guard case .confirmUser = result.nextStep else {
+            XCTFail("Result should be .confirmUser for next step")
+            return
+        }
+        XCTAssertFalse(result.isSignUpComplete, "Sign up should not be complete")
+
+        // Verify the state machine moved to awaitingUserConfirmation
+        let currentState = await authPluginError.authStateMachine.currentState
+        guard case .configured(_, _, let signUpState) = currentState else {
+            XCTFail("Should be in configured state")
+            return
+        }
+
+        guard case .awaitingUserConfirmation(let data, _) = signUpState else {
+            XCTFail("Should be in awaitingUserConfirmation state")
+            return
+        }
+
+        // Verify new username is in the state
+        XCTAssertEqual(data.username, "new-user")
+    }
+
+    /// Given: Configured auth machine with passwordless sign up that fails
+    /// When: Sign up error occurs with session data
+    /// Then: Session data is preserved in error state for retry
+    func testPasswordlessSignUpPreservesSessionInErrorState() async throws {
+        let mockIdentityProvider = MockIdentityProvider(
+            mockSignUpResponse: { _ in
+                throw AWSCognitoIdentityProvider.InvalidParameterException()
+            }
+        )
+
+        let authPlugin = configureCustomPluginWith(
+            userPool: { mockIdentityProvider },
+            initialState: initialState
+        )
+
+        do {
+            _ = try await authPlugin.signUp(
+                username: "jeffb",
+                options: options
+            )
+            XCTFail("Should throw error")
+        } catch {
+            guard let authError = error as? AuthError else {
+                XCTFail("Should throw Auth error")
+                return
+            }
+
+            guard case .service = authError else {
+                XCTFail("Auth error should be of type service error")
+                return
+            }
+
+            // Verify the state machine is now in error state
+            let currentState = await authPlugin.authStateMachine.currentState
+            guard case .configured(_, _, let signUpState) = currentState else {
+                XCTFail("Should be in configured state")
+                return
+            }
+
+            guard case .error(_, let data) = signUpState else {
+                XCTFail("Should be in error state")
+                return
+            }
+
+            // Verify username is preserved in error state
+            XCTAssertEqual(data.username, "jeffb")
+        }
+    }
 }
