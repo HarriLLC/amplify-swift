@@ -31,6 +31,19 @@ public protocol AuthCategoryBehavior: AuthCategoryUserBehavior, AuthCategoryDevi
         options: AuthSignUpRequest.Options?
     ) async throws -> AuthSignUpResult
 
+    /// Prepare for new user
+    ///
+    ///  If new there are already logged in user, it will save it in key chain with another key and every thing will be ready for another session
+    func prepareForNewUser() async throws -> AuthPrepareUserSwitchResult
+    
+    /// Switch to user
+    ///
+    ///  if user there are active sessionm use this method to switch to another stored session
+    /// - Parameters:
+    ///   - key: username to switch, which is unique for each session
+    func switchToUser(key: String) async throws -> AuthPrepareUserSwitchResult
+    
+    
     /// Confirms the `signUp` operation.
     ///
     /// Invoke this operation as a follow up for the signUp process if the authentication provider

@@ -385,6 +385,10 @@ extension AuthPluginErrorConstants {
     Operation performed is not a valid operation for the current auth state
     """
 
+    static let prepareUserSwitchInvalidStateError: RecoverySuggestion = """
+    Operation performed is not a valid operation for the current auth state, the authentication state is already signed out and nothing to prepare
+    """
+
     static let notAuthorizedError: RecoverySuggestion = """
     Check whether the given values are correct and the user is authorized to perform the operation
     """

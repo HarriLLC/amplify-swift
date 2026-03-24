@@ -21,7 +21,8 @@ class AWSAuthAutoSignInTests: BasePluginTest {
             .signedUp(
                 .init(username: "jeffb", session: "session"),
                 .init(.completeAutoSignIn("session"))
-            )
+            ),
+            .notStarted
         )
     }
 
@@ -120,7 +121,8 @@ class AWSAuthAutoSignInTests: BasePluginTest {
             .signedUp(
                 .init(username: "jeffb", session: "session"),
                 .init(.completeAutoSignIn("session"))
-            )
+            ),
+            .notStarted
         )
 
         let authPluginSigningIn = configureCustomPluginWith(
@@ -183,6 +185,7 @@ class AWSAuthAutoSignInTests: BasePluginTest {
         let initialStateNotStarted = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
+            .notStarted,
             .notStarted
         )
 
@@ -242,7 +245,8 @@ class AWSAuthAutoSignInTests: BasePluginTest {
         let initialStateInitiatingSignUp = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .initiatingSignUp(.init(username: "user"))
+            .initiatingSignUp(.init(username: "user")),
+            .notStarted
         )
 
         let authPluginInitiatingSignUp = configureCustomPluginWith(
@@ -301,7 +305,8 @@ class AWSAuthAutoSignInTests: BasePluginTest {
         let initialStateAwaitingUserConfirmation = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .awaitingUserConfirmation(.init(username: "user"), .init(.completeAutoSignIn("session")))
+            .awaitingUserConfirmation(.init(username: "user"), .init(.completeAutoSignIn("session"))),
+            .notStarted
         )
 
         let authPluginAwaitingUserConfirmation = configureCustomPluginWith(
@@ -360,7 +365,8 @@ class AWSAuthAutoSignInTests: BasePluginTest {
         let initialStateConfirmingSignUp = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .confirmingSignUp(.init(username: "user"))
+            .confirmingSignUp(.init(username: "user")),
+            .notStarted
         )
 
         let authPluginConfirmingSignUp = configureCustomPluginWith(
@@ -419,7 +425,8 @@ class AWSAuthAutoSignInTests: BasePluginTest {
         let initialStateError = AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .error(.service(error: AuthError.service("Unknown error", "Unknown error")))
+            .error(.service(error: AuthError.service("Unknown error", "Unknown error"))),
+            .notStarted
         )
 
         let authPluginError = configureCustomPluginWith(

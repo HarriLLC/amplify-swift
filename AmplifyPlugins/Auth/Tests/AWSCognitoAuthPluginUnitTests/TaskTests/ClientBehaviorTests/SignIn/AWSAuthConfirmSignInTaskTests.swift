@@ -25,6 +25,7 @@ class AuthenticationProviderConfirmSigninTests: BasePluginTest {
                     .apiBased(.userSRP)
                 )),
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
     }

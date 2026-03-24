@@ -17,6 +17,14 @@ extension AuthCategory: AuthCategoryBehavior {
         return try await plugin.signUp(username: username, password: password, options: options)
     }
 
+    public func prepareForNewUser() async throws -> AuthPrepareUserSwitchResult {
+        return try await plugin.prepareForNewUser()
+    }
+    
+    public func switchToUser(key: String) async throws -> AuthPrepareUserSwitchResult {
+        return try await plugin.switchToUser(key: key)
+    }
+    
     public func confirmSignUp(
         for username: String,
         confirmationCode: String,

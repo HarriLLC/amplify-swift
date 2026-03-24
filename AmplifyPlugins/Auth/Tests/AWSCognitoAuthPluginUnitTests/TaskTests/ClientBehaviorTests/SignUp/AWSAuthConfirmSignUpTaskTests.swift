@@ -30,7 +30,8 @@ class AWSAuthConfirmSignUpTaskTests: BasePluginTest {
         AuthState.configured(
             .signedOut(.init(lastKnownUserName: nil)),
             .configured,
-            .awaitingUserConfirmation(signUpData, signUpResult)
+            .awaitingUserConfirmation(signUpData, signUpResult),
+            .notStarted
         )
     }
 

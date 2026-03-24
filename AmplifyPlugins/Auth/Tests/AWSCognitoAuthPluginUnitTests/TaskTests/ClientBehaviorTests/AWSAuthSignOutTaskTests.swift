@@ -20,6 +20,7 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
         AuthState.configured(
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
     }
@@ -89,6 +90,7 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
         let initialState = AuthState.configured(
             AuthenticationState.federatedToIdentityPool,
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
 
@@ -110,6 +112,7 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
         let initialState = AuthState.configured(
             AuthenticationState.signedIn(.hostedUISignInData),
             AuthorizationState.sessionEstablished(.hostedUITestData),
+            .notStarted,
             .notStarted
         )
 
@@ -132,6 +135,7 @@ class AWSAuthSignOutTaskTests: BasePluginTest {
         let initialState = AuthState.configured(
             AuthenticationState.signedOut(.init()),
             AuthorizationState.sessionEstablished(.testDataIdentityPool),
+            .notStarted,
             .notStarted
         )
 

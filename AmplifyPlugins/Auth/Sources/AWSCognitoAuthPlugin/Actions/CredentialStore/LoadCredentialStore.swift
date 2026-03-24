@@ -13,6 +13,7 @@ struct LoadCredentialStore: Action {
     let identifier = "LoadCredentialStore"
 
     let credentialStoreType: CredentialStoreDataType
+    let key: String?
 
     func execute(withDispatcher dispatcher: EventDispatcher, environment: Environment) async {
 
@@ -38,8 +39,13 @@ struct LoadCredentialStore: Action {
             let credentialStoreData: CredentialStoreData
             switch credentialStoreType {
             case .amplifyCredentials:
-                let storedCredentials = try amplifyCredentialStore.retrieveCredential()
-                credentialStoreData = .amplifyCredentials(storedCredentials)
+                if let key = self.key {
+                    let storedCredentials = try amplifyCredentialStore.retrieveCredential(key: key)
+                    credentialStoreData = .amplifyCredentials(storedCredentials)
+                } else {
+                    let storedCredentials = try amplifyCredentialStore.retrieveCredential()
+                    credentialStoreData = .amplifyCredentials(storedCredentials)
+                }
             case .deviceMetadata(let username):
                 let deviceMetadata = try amplifyCredentialStore.retrieveDevice(for: username)
                 credentialStoreData = .deviceMetadata(deviceMetadata, username)

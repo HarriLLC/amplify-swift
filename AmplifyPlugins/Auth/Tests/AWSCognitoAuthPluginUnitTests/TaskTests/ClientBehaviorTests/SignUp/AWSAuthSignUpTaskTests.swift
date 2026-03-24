@@ -18,7 +18,7 @@ import AWSCognitoIdentityProvider
 class AWSAuthSignUpTaskTests: BasePluginTest {
 
     override var initialState: AuthState {
-        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
     }
 
     /// Given: Configured AuthState machine

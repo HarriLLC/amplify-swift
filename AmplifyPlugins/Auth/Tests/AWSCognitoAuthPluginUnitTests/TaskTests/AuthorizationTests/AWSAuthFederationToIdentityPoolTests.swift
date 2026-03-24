@@ -70,34 +70,40 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                 AuthenticationState.signedOut(.testData),
                 AuthorizationState.sessionEstablished(
                     AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.notConfigured,
                 AuthorizationState.sessionEstablished(
                     AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.federatedToIdentityPool,
                 AuthorizationState.sessionEstablished(
                     AmplifyCredentials.testDataWithExpiredAWSCredentials),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.notConfigured,
                 AuthorizationState.configured,
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.error(.testData),
                 AuthorizationState.configured,
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.signedOut(.testData),
                 AuthorizationState.error(.sessionExpired(
                     error: NotAuthorizedException(message: "message"))),
+                .notStarted,
                 .notStarted
             )
         ]
@@ -177,6 +183,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
             AuthenticationState.signedOut(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
         let plugin = configurePluginWith(
@@ -241,11 +248,13 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
             AuthState.configured(
                 AuthenticationState.signedOut(.testData),
                 AuthorizationState.notConfigured,
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.signedIn(.testData),
                 AuthorizationState.configured,
+                .notStarted,
                 .notStarted
             )
         ]
@@ -312,6 +321,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
             initialState: AuthState.configured(
                 AuthenticationState.error(.testData),
                 AuthorizationState.error(.invalidState(message: "")),
+                .notStarted,
                 .notStarted
             )
         )
@@ -370,11 +380,13 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                     identityID: "identityId",
                     credentials: .testData
                 )),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.error(.testData),
                 AuthorizationState.error(.invalidState(message: "")),
+                .notStarted,
                 .notStarted
             )
         ]
@@ -425,6 +437,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
             AuthState.configured(
                 AuthenticationState.federatedToIdentityPool,
                 AuthorizationState.configured,
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
@@ -434,6 +447,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                     identityID: "identityId",
                     credentials: .testData
                 )),
+                .notStarted,
                 .notStarted
             )
         ]
@@ -516,6 +530,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                     identityID: mockIdentityId,
                     credentials: .expiredTestData
                 )),
+            .notStarted,
             .notStarted
         )
 
@@ -601,6 +616,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                     identityID: mockIdentityId,
                     credentials: .testData
                 )),
+            .notStarted,
             .notStarted
         )
 
@@ -697,6 +713,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                     identityID: mockIdentityId,
                     credentials: .expiredTestData
                 )),
+            .notStarted,
             .notStarted
         )
 
@@ -785,23 +802,27 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                 AuthenticationState.signedOut(.testData),
                 AuthorizationState.sessionEstablished(
                     AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.notConfigured,
                 AuthorizationState.sessionEstablished(
                     AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.federatedToIdentityPool,
                 AuthorizationState.sessionEstablished(
                     AmplifyCredentials.testDataWithExpiredAWSCredentials),
+                .notStarted,
                 .notStarted
             ),
             AuthState.configured(
                 AuthenticationState.notConfigured,
                 AuthorizationState.configured,
+                .notStarted,
                 .notStarted
             )
         ]
@@ -875,6 +896,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
             AuthenticationState.signedOut(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -961,6 +983,7 @@ class AWSAuthFederationToIdentityPoolTests: BaseAuthorizationTests {
                     identityID: mockIdentityId,
                     credentials: .expiredTestData
                 )),
+            .notStarted,
             .notStarted
         )
 

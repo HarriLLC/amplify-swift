@@ -38,6 +38,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 
@@ -102,6 +103,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
         let getTokensFromRefreshToken: MockIdentityProvider.MockGetTokensFromRefreshTokenResponse = { _ in
@@ -167,6 +169,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedOut(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -231,6 +234,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -283,6 +287,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -522,6 +527,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -582,6 +588,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -646,6 +653,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
         let initialState = AuthState.configured(
             AuthenticationState.signedOut(.testData),
             AuthorizationState.error(.sessionError(.service(AuthError.unknown("error")), .noCredentials)),
+            .notStarted,
             .notStarted
         )
 
@@ -710,6 +718,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedOut(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataIdentityPoolWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -770,6 +779,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 
@@ -829,6 +839,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signingIn(
                 .resolvingChallenge(challenge, .smsMfa, signInMethod)),
             AuthorizationState.configured,
+            .notStarted,
             .notStarted
         )
 
@@ -884,6 +895,7 @@ class AWSAuthFetchSignInSessionOperationTests: BaseAuthorizationTests {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 

@@ -26,7 +26,7 @@ extension AuthState: CustomDebugStringConvertible {
             additionalMetadataDictionary = authenticationState.debugDictionary.merging(
                 authorizationState.debugDictionary, uniquingKeysWith: {$1}
             )
-        case .configured(let authenticationState, let authorizationState, let signUpState):
+        case .configured(let authenticationState, let authorizationState, let signUpState, _):
             additionalMetadataDictionary = authenticationState.debugDictionary
                 .merging(authorizationState.debugDictionary, uniquingKeysWith: {$1})
                 .merging(signUpState.debugDictionary, uniquingKeysWith: {$1})
