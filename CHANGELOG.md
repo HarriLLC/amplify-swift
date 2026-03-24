@@ -1,5 +1,74 @@
 # Changelog
 
+## 2.54.1 (2026-03-11)
+
+### Bug Fixes
+
+- **api**: populate the auth mode when parsing the request response. So AppSyncListProvider.getNextPage() will have the auth mode. (#4156)
+
+## 2.54.0 (2026-03-04)
+
+### Features
+
+- **kinesis**: fix retry logic for request-level errors (#4167)
+- **kinesis**: add Kinesis Client (#4141)
+- **foundation**: Add Foundation libraries (#4150)
+
+## 2.53.3 (2026-01-15)
+
+### Bug Fixes
+
+- **auth**: remove is keychain configured check (#4129)
+
+## 2.53.2 (2025-12-15)
+
+## 2.53.1 (2025-12-11)
+
+### Bug Fixes
+
+- **auth**: add prewarming check keychain store (#4115)
+
+## 2.53.0 (2025-12-09)
+
+### Features
+
+- **core**: update the aws-sdk-swift version (#4107)
+
+### Bug Fixes
+
+- **auth**: don't remove items from keychain if it already has items (#4105)
+- **logging**: update protection level (#4106)
+
+## 2.52.1 (2025-11-25)
+
+### Bug Fixes
+
+- **auth**: fix HostedUIOptions decoding for optional fields (#4102)
+
+## 2.52.0 (2025-11-19)
+
+### Features
+
+- **auth**: add support for cognito oidc parameters in managed login (#4096)
+
+### Bug Fixes
+
+- **auth**: add checks against random logouts (#4099)
+- **auth**: resolve format string mismatch in ASF timestamp generation (#4095)
+- **auth**: caching session during error transitions while auto signin (#4094)
+
+## 2.51.5 (2025-11-10)
+
+### Bug Fixes
+
+- **predictions**: remove liveness event listeners on session completion (#4092)
+
+## 2.51.4 (2025-10-28)
+
+### Bug Fixes
+
+- **auth**: add missing state transitions during auto sign in (#4065)
+
 ## 2.51.3 (2025-10-23)
 
 ## 2.51.2 (2025-10-13)
