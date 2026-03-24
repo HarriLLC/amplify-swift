@@ -28,6 +28,7 @@ class ConfirmSignInWithSetUpMFATaskTests: BasePluginTest {
                     .testData
                 )),
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
     }

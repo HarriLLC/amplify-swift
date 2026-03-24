@@ -46,6 +46,10 @@ extension AuthenticationState {
             case .signedOut(let signedOutData):
                 if let authEvent = event as? AuthenticationEvent {
                     return resolveSignedOut( byApplying: authEvent, to: signedOutData)
+                } else if let switchUserEvent = event as? SwitchUserEvent, case SwitchUserEvent.EventType.credentialsFetched(let amplifyCredentials, let key, let isSigningIn) = switchUserEvent.eventType, case AmplifyCredentials.userPoolOnly(let signedInData) = amplifyCredentials, isSigningIn {
+
+                    let action = StoreSwitchUserCredentials(signedInData: signedInData, userKey: nil)
+                    return .init(newState: .signedIn(signedInData), actions: [action])
                 } else if let authZEvent = event.isAuthorizationEvent,
                           case .startFederationToIdentityPool = authZEvent {
                     return .init(newState: .federatingToIdentityPool)
@@ -65,6 +69,10 @@ extension AuthenticationState {
                         to: .notStarted,
                         with: signedInData
                     )
+                } else if let switchUserEvent = event as? SwitchUserEvent, case SwitchUserEvent.EventType.credentialsStored(let key, let credentials, let isSignOut) = switchUserEvent.eventType, isSignOut, case AmplifyCredentials.userPoolOnly(let signedInData) = credentials  {
+                    
+                    return .init(newState: .signedOut(SignedOutData(lastKnownUserName: key)))
+
                 } else {
                     return .from(oldState)
                 }

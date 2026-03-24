@@ -16,7 +16,7 @@ import XCTest
 class SignInSetUpTOTPTests: BasePluginTest {
 
     override var initialState: AuthState {
-        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
     }
 
     /// Test a signIn with valid inputs getting continueSignInWithTOTPSetup challenge

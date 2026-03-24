@@ -55,7 +55,7 @@ class AWSAuthSignUpTask: AuthSignUpTask, DefaultLogger {
 
         let stateSequences = await authStateMachine.listen()
         for await state in stateSequences {
-            guard case .configured(_, _, let signUpState) = state else { continue }
+            guard case .configured(_, _, let signUpState, _) = state else { continue }
 
             switch signUpState {
             case .awaitingUserConfirmation(_, let result):
@@ -95,7 +95,7 @@ class AWSAuthSignUpTask: AuthSignUpTask, DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Validating current state")
         for await state in stateSequences {
-            guard case .configured(_, _, let signUpState) = state else {
+            guard case .configured(_, _, let signUpState, _) = state else {
                 continue
             }
 

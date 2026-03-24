@@ -61,8 +61,8 @@ extension CredentialStoreState {
         ) -> StateResolution<StateType> {
 
             switch credentialStoreEvent.eventType {
-            case .loadCredentialStore(let type):
-                let action = LoadCredentialStore(credentialStoreType: type)
+            case .loadCredentialStore(let type, let key):
+                let action = LoadCredentialStore(credentialStoreType: type, key: key)
                 let resolution = StateResolution(
                     newState: CredentialStoreState.loadingStoredCredentials,
                     actions: [action]
@@ -140,22 +140,22 @@ extension CredentialStoreState {
             byApplying credentialStoreEvent: CredentialStoreEvent
         ) -> StateResolution<StateType> {
             switch credentialStoreEvent.eventType {
-            case .loadCredentialStore(let type):
-                let action = LoadCredentialStore(credentialStoreType: type)
+            case .loadCredentialStore(let type, let key):
+                let action = LoadCredentialStore(credentialStoreType: type, key: key)
                 let resolution = StateResolution(
                     newState: CredentialStoreState.loadingStoredCredentials,
                     actions: [action]
                 )
                 return resolution
-            case .storeCredentials(let credentials):
-                let action = StoreCredentials(credentials: credentials)
+            case .storeCredentials(let credentials, let key):
+                let action = StoreCredentials(credentials: credentials, key: key)
                 let resolution = StateResolution(
                     newState: CredentialStoreState.storingCredentials,
                     actions: [action]
                 )
                 return resolution
-            case .clearCredentialStore(let type):
-                let action = ClearCredentialStore(dataStoreType: type)
+            case .clearCredentialStore(let type, let key):
+                let action = ClearCredentialStore(dataStoreType: type, key: key)
                 let resolution = StateResolution(
                     newState: CredentialStoreState.clearingCredentials,
                     actions: [action]

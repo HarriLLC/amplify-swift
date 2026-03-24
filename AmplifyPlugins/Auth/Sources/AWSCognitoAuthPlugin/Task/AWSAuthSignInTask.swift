@@ -62,7 +62,7 @@ class AWSAuthSignInTask: AuthSignInTask, DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Validating current state")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, _, _) = state else {
+            guard case .configured(let authenticationState, _, _, _) = state else {
                 continue
             }
 
@@ -90,7 +90,7 @@ class AWSAuthSignInTask: AuthSignInTask, DefaultLogger {
         log.verbose("Waiting for signin to complete")
         let stateSequences = await authStateMachine.listen()
         for await state in stateSequences {
-            guard case .configured(let authNState, let authZState, _) = state else { continue }
+            guard case .configured(let authNState, let authZState, _, _) = state else { continue }
 
             switch authNState {
 
@@ -125,7 +125,7 @@ class AWSAuthSignInTask: AuthSignInTask, DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Wait for signIn to cancel")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, _, _) = state else {
+            guard case .configured(let authenticationState, _, _, _) = state else {
                 continue
             }
             switch authenticationState {

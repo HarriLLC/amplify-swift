@@ -37,6 +37,25 @@ extension AuthorizationState {
                     return .init(newState: .configured)
                 default: break
                 }
+            } else if let switchEvent = event as? SwitchUserEvent {
+                
+                switch switchEvent.eventType {
+                    
+                case .credentialsFetched(let amplifyCredentials, _, let isSigningIn) where isSigningIn:
+                    
+                    if case AmplifyCredentials.userPoolOnly(let signedInData) = amplifyCredentials {
+                        let action = InitializeFetchAuthSessionWithUserPool(
+                            signedInData: signedInData)
+                        return .init(
+                            newState: .fetchingAuthSessionWithUserPool(.notStarted, signedInData),
+                            actions: [action]
+                        )
+                    }
+                case .credentialsStored(let key, let amplifyCredentials, let isPrepareToSwitch) where isPrepareToSwitch:
+                    return .init(newState: .configured)
+                default:
+                    break
+                }
             }
 
             switch oldState {

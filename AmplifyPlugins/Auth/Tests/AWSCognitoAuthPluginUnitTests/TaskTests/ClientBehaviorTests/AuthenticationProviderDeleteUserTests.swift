@@ -440,7 +440,7 @@ class AuthenticationProviderDeleteUserTests: BasePluginTest {
         }
 
         switch await plugin.authStateMachine.currentState {
-        case .configured(let authNState, let authZState, _):
+        case .configured(let authNState, let authZState, _, _):
             switch (authNState, authZState) {
             case (.signedOut, .configured):
                 print("AuthN and AuthZ are in a valid state")

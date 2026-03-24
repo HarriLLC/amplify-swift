@@ -26,11 +26,11 @@ struct CredentialStoreEvent: StateMachineEvent {
 
         case migrateLegacyCredentialStore
 
-        case loadCredentialStore(CredentialStoreDataType)
+        case loadCredentialStore(CredentialStoreDataType, key: String? = nil)
 
-        case storeCredentials(CredentialStoreData)
+        case storeCredentials(CredentialStoreData, key: String? = nil)
 
-        case clearCredentialStore(CredentialStoreDataType)
+        case clearCredentialStore(CredentialStoreDataType, key: String? = nil)
 
         case completedOperation(CredentialStoreData)
 

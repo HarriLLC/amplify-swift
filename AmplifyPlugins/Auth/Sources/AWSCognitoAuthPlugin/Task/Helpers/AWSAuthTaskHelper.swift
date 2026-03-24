@@ -35,7 +35,7 @@ class AWSAuthTaskHelper: DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Waiting for signOut completion")
         for await state in stateSequences {
-            guard case .configured(let authNState, _, _) = state else {
+            guard case .configured(let authNState, _, _, _) = state else {
                 let error = AuthError.invalidState("Auth State not in a valid state", AuthPluginErrorConstants.invalidStateError, nil)
                 return AWSCognitoSignOutResult.failed(error)
             }
@@ -81,7 +81,7 @@ class AWSAuthTaskHelper: DefaultLogger {
         await didStateMachineConfigured()
         let authState = await authStateMachine.currentState
 
-        guard case .configured(let authenticationState, _, _) = authState else {
+        guard case .configured(let authenticationState, _, _, _) = authState else {
             throw AuthError.configuration(
                 "Plugin not configured",
                 AuthPluginErrorConstants.configurationError
