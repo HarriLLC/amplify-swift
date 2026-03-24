@@ -52,7 +52,7 @@ class AWSAuthConfirmSignInTask: AuthConfirmSignInTask, DefaultLogger {
             AuthPluginErrorConstants.invalidStateError, nil
         )
 
-        guard case .configured(let authNState, _, _) = await authStateMachine.currentState,
+        guard case .configured(let authNState, _, _, _) = await authStateMachine.currentState,
               case .signingIn(let signInState) = authNState else {
             throw invalidStateError
         }
@@ -62,7 +62,7 @@ class AWSAuthConfirmSignInTask: AuthConfirmSignInTask, DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Waiting for response")
         for await state in stateSequences {
-               guard case .configured(let authNState, let authZState, _) = state else {
+               guard case .configured(let authNState, let authZState, _, _) = state else {
                    continue
                }
                switch authNState {

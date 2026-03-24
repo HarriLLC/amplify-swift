@@ -62,7 +62,7 @@ class AWSAuthAutoSignInTask: AuthAutoSignInTask, DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Validating current state")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, _, let signUpState) = state else {
+            guard case .configured(let authenticationState, _, let signUpState, _) = state else {
                 continue
             }
 
@@ -98,7 +98,7 @@ class AWSAuthAutoSignInTask: AuthAutoSignInTask, DefaultLogger {
         log.verbose("Waiting for autoSignIn to complete")
         let stateSequences = await authStateMachine.listen()
         for await state in stateSequences {
-            guard case .configured(let authNState, let authZState, _) = state else { continue }
+            guard case .configured(let authNState, let authZState, _, _) = state else { continue }
 
             switch authNState {
             case .signedIn:
@@ -132,7 +132,7 @@ class AWSAuthAutoSignInTask: AuthAutoSignInTask, DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Wait for signIn to cancel")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, _, _) = state else {
+            guard case .configured(let authenticationState, _, _, _) = state else {
                 continue
             }
             switch authenticationState {
@@ -145,7 +145,7 @@ class AWSAuthAutoSignInTask: AuthAutoSignInTask, DefaultLogger {
 
     private func sendAutoSignInEvent() async throws {
         let currentState = await authStateMachine.currentState
-        guard case .configured(_, _, let signUpState) = currentState  else {
+        guard case .configured(_, _, let signUpState, _) = currentState  else {
             let message = "Auth state machine not in configured state: \(currentState)"
             let error = AuthError.invalidState(message, "", nil)
             throw error

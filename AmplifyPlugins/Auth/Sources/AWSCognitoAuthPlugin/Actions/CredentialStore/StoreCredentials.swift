@@ -13,6 +13,7 @@ struct StoreCredentials: Action {
     let identifier = "StoreCredentials"
 
     let credentials: CredentialStoreData
+    let key: String?
 
     func execute(withDispatcher dispatcher: EventDispatcher, environment: Environment) async {
 
@@ -33,8 +34,11 @@ struct StoreCredentials: Action {
 
             switch credentials {
             case .amplifyCredentials(let amplifyCredentials):
-                try amplifyCredentialStore.saveCredential(amplifyCredentials)
-            case .deviceMetadata(let deviceMetadata, let username):
+                if let key = self.key {
+                    try amplifyCredentialStore.saveCredential(amplifyCredentials, key: key)
+                } else {
+                    try amplifyCredentialStore.saveCredential(amplifyCredentials)
+                }            case .deviceMetadata(let deviceMetadata, let username):
                 try amplifyCredentialStore.saveDevice(deviceMetadata, for: username)
             case .asfDeviceId(let deviceId, let username):
                 try amplifyCredentialStore.saveASFDevice(deviceId, for: username)

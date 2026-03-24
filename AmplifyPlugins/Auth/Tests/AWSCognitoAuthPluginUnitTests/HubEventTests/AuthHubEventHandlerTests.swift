@@ -193,7 +193,7 @@ class AuthHubEventHandlerTests: XCTestCase {
     func testWebUISignedInHubEvent() async {
         let mockIdentityProvider = MockIdentityProvider()
 
-        let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
 
         configurePlugin(initialState: initialState, userPoolFactory: mockIdentityProvider)
         let hubEventExpectation = expectation(description: "Should receive the hub event")
@@ -226,7 +226,7 @@ class AuthHubEventHandlerTests: XCTestCase {
     func testSocialWebUISignedInHubEvent() async {
         let mockIdentityProvider = MockIdentityProvider()
 
-        let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
 
         configurePlugin(initialState: initialState, userPoolFactory: mockIdentityProvider)
         let hubEventExpectation = expectation(description: "Should receive the hub event")
@@ -331,7 +331,7 @@ class AuthHubEventHandlerTests: XCTestCase {
             )
         })
 
-        let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        let initialState = AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
 
         configurePlugin(initialState: initialState, userPoolFactory: mockIdentityProvider)
     }
@@ -344,6 +344,7 @@ class AuthHubEventHandlerTests: XCTestCase {
                 .apiBased(.userSRP)
             )),
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
 
@@ -364,6 +365,7 @@ class AuthHubEventHandlerTests: XCTestCase {
                     cognitoUserPoolTokens: AWSCognitoUserPoolTokens.testData
                 )),
             AuthorizationState.sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 
@@ -390,6 +392,7 @@ class AuthHubEventHandlerTests: XCTestCase {
                     cognitoUserPoolTokens: AWSCognitoUserPoolTokens.testData
                 )),
             AuthorizationState.sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 
@@ -409,6 +412,7 @@ class AuthHubEventHandlerTests: XCTestCase {
         let initialState = AuthState.configured(
             AuthenticationState.signedOut(.testData),
             AuthorizationState.configured,
+            .notStarted,
             .notStarted
         )
 
@@ -421,6 +425,7 @@ class AuthHubEventHandlerTests: XCTestCase {
         let initialState = AuthState.configured(
             AuthenticationState.federatedToIdentityPool,
             AuthorizationState.sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 
@@ -434,6 +439,7 @@ class AuthHubEventHandlerTests: XCTestCase {
             AuthenticationState.signedIn(.testData),
             AuthorizationState.sessionEstablished(
                 AmplifyCredentials.testDataWithExpiredTokens),
+            .notStarted,
             .notStarted
         )
 

@@ -16,7 +16,7 @@ import XCTest
 
 class AWSAuthSignInOptionsTestCase: BasePluginTest {
     override var initialState: AuthState {
-        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted)
+        AuthState.configured(.signedOut(.init(lastKnownUserName: nil)), .configured, .notStarted, .notStarted)
     }
 
     override func setUp() {
@@ -181,7 +181,7 @@ class AWSAuthSignInOptionsTestCase: BasePluginTest {
 
 private extension AuthState {
     var authenticationState: AuthenticationState? {
-        if case .configured(let authenticationState, _, _) = self {
+        if case .configured(let authenticationState, _, _, _) = self {
             return authenticationState
         }
         return nil

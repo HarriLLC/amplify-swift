@@ -29,6 +29,7 @@ class ConfirmSignInTOTPTaskTests: BasePluginTest {
                     .apiBased(.userSRP)
                 )),
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
     }

@@ -43,6 +43,7 @@ class ListWebAuthnCredentialsTaskTests: XCTestCase {
                 )
             ),
             .sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 

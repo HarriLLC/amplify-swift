@@ -21,7 +21,17 @@ struct SignOutLocally: Action {
 
         let event: StateMachineEvent
         do {
-            try await credentialStoreClient?.deleteData(type: .amplifyCredentials)
+
+            let credentialStoreData = try await credentialStoreClient?.fetchData(type: .amplifyCredentials)
+            
+            if let credentialStoreData = credentialStoreData, case CredentialStoreData.amplifyCredentials(let amplifyCredentials) = credentialStoreData, case AmplifyCredentials.userPoolOnly(let signedInData) = amplifyCredentials {
+                
+                try await credentialStoreClient?.deleteData(type: .amplifyCredentials, key: signedInData.username)
+            } else {
+                
+                try await credentialStoreClient?.deleteData(type: .amplifyCredentials)
+            }
+
             event = SignOutEvent(eventType: .signedOutSuccess(
                 hostedUIError: hostedUIError,
                 globalSignOutError: globalSignOutError,

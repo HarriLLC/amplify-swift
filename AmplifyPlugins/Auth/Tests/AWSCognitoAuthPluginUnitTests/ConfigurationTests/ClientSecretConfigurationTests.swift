@@ -29,6 +29,7 @@ class ClientSecretConfigurationTests: XCTestCase {
                     cognitoUserPoolTokens: AWSCognitoUserPoolTokens.testData
                 )),
             AuthorizationState.sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
     }

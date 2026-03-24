@@ -44,7 +44,7 @@ struct HostedUISignInHelper: DefaultLogger {
         let stateSequences = await authStateMachine.listen()
         log.verbose("Wait for a valid state")
         for await state in stateSequences {
-            guard case .configured(let authenticationState, _, _) = state else {
+            guard case .configured(let authenticationState, _, _, _) = state else {
                 continue
             }
             switch authenticationState {
@@ -87,6 +87,7 @@ struct HostedUISignInHelper: DefaultLogger {
             guard case .configured(
                 let authNState,
                 let authZState,
+                _,
                 _
             ) = state else { continue }
 
@@ -153,7 +154,7 @@ struct HostedUISignInHelper: DefaultLogger {
         log.verbose("Wait for signIn to cancel")
         let stateSequences = await authStateMachine.listen()
         for await state in stateSequences {
-            guard case .configured(let authenticationState, _, _) = state else {
+            guard case .configured(let authenticationState, _, _, _) = state else {
                 continue
             }
 

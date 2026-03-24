@@ -47,6 +47,7 @@ class AssociateWebAuthnCredentialTaskTests: XCTestCase {
                 )
             ),
             .sessionEstablished(AmplifyCredentials.testData),
+            .notStarted,
             .notStarted
         )
 

@@ -29,6 +29,7 @@ class ConfirmSignInWithMFASelectionTaskTests: BasePluginTest {
                     .apiBased(.userSRP)
                 )),
             AuthorizationState.sessionEstablished(.testData),
+            .notStarted,
             .notStarted
         )
     }
