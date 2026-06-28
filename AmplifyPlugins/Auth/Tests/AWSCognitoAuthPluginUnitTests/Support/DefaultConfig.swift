@@ -457,6 +457,10 @@ struct MockLegacyStore: KeychainStoreBehavior {
 
     }
 
+    func _hasItems() throws -> Bool {
+        return false
+    }
+
 }
 
 struct MockASF: AdvancedSecurityBehavior {
