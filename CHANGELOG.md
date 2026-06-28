@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.58.3 (2026-06-15)
+
+### Bug Fixes
+
+- **auth**: defer keychain-sharing reconfigure during in-flight sign-in (#4231)
+
+## 2.58.2 (2026-06-04)
+
 ## 2.58.1 (2026-05-06)
 
 ### Bug Fixes
