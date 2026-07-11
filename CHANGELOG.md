@@ -1,5 +1,132 @@
 # Changelog
 
+## 2.58.3 (2026-06-15)
+
+### Bug Fixes
+
+- **auth**: defer keychain-sharing reconfigure during in-flight sign-in (#4231)
+
+## 2.58.2 (2026-06-04)
+
+## 2.58.1 (2026-05-06)
+
+### Bug Fixes
+
+- **auth**: Use inputUsername for device metadata lookup in rememberDevice/forgetDevice and add e2e tests (#4209)
+
+## 2.58.0 (2026-05-05)
+
+### Features
+
+- **storage**: add progress stall timeout for S3 uploads (#4162)
+
+### Bug Fixes
+
+- **auth**: Use inputUsername for device metadata lookup during token refresh (#4208)
+- **api**: recycle WebSocket and resubscribe on same-online network path change (#4202)
+
+## 2.57.0 (2026-04-21)
+
+### Features
+
+- **core**: make AmplifyOutputsData and all nested types public
+
+### Bug Fixes
+
+- **auth**: Consistent device metadata keychain key across auth flows (#4196)
+- **api**: remove custom query parameter allowlist (#4194)
+- **API**: Support '+' in query parameters and improve validation logic (#4137)
+
+## 2.56.0 (2026-04-15)
+
+### Features
+
+- **storage**: add support for upload presigned url (#4146)
+
+### Bug Fixes
+
+- **ci**: include Xcode version in cache keys to prevent stale artifacts (#4192)
+
+## 2.55.0 (2026-04-08)
+
+### Features
+
+- **firehose**: Add Firehose client (#4182)
+
+### Bug Fixes
+
+- using Hub category to fire configured event (#3995)
+- **kinesis**: enable full flush for cache (#4169)
+
+## 2.54.1 (2026-03-11)
+
+### Bug Fixes
+
+- **api**: populate the auth mode when parsing the request response. So AppSyncListProvider.getNextPage() will have the auth mode. (#4156)
+
+## 2.54.0 (2026-03-04)
+
+### Features
+
+- **kinesis**: fix retry logic for request-level errors (#4167)
+- **kinesis**: add Kinesis Client (#4141)
+- **foundation**: Add Foundation libraries (#4150)
+
+## 2.53.3 (2026-01-15)
+
+### Bug Fixes
+
+- **auth**: remove is keychain configured check (#4129)
+
+## 2.53.2 (2025-12-15)
+
+## 2.53.1 (2025-12-11)
+
+### Bug Fixes
+
+- **auth**: add prewarming check keychain store (#4115)
+
+## 2.53.0 (2025-12-09)
+
+### Features
+
+- **core**: update the aws-sdk-swift version (#4107)
+
+### Bug Fixes
+
+- **auth**: don't remove items from keychain if it already has items (#4105)
+- **logging**: update protection level (#4106)
+
+## 2.52.1 (2025-11-25)
+
+### Bug Fixes
+
+- **auth**: fix HostedUIOptions decoding for optional fields (#4102)
+
+## 2.52.0 (2025-11-19)
+
+### Features
+
+- **auth**: add support for cognito oidc parameters in managed login (#4096)
+
+### Bug Fixes
+
+- **auth**: add checks against random logouts (#4099)
+- **auth**: resolve format string mismatch in ASF timestamp generation (#4095)
+- **auth**: caching session during error transitions while auto signin (#4094)
+
+## 2.51.5 (2025-11-10)
+
+### Bug Fixes
+
+- **predictions**: remove liveness event listeners on session completion (#4092)
+
+## 2.51.4 (2025-10-28)
+
+### Bug Fixes
+
+- **auth**: add missing state transitions during auto sign in (#4065)
+
 ## 2.51.3 (2025-10-23)
 
 ## 2.51.2 (2025-10-13)

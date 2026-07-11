@@ -21,11 +21,6 @@ struct AWSCognitoAuthCredentialStore {
 
     // User defaults constants
     private let userDefaultsNameSpace = "amplify_secure_storage_scopes.awsCognitoAuthPlugin"
-    /// This UserDefault Key is used to check if Keychain already has items stored on a fresh install
-    /// If this flag doesn't exist, previous keychain values for Amplify would be wiped out
-    private var isKeychainConfiguredKey: String {
-        "\(userDefaultsNameSpace).isKeychainConfigured"
-    }
     /// This UserDefaults Key is use to retrieve the stored access group to determine
     /// which access group the migration should happen from
     /// If none is found, the unshared service is used for migration and all items
@@ -56,21 +51,27 @@ struct AWSCognitoAuthCredentialStore {
         if migrateKeychainItemsOfUserSession {
             try? migrateKeychainItemsToAccessGroup()
         } else if oldAccessGroup == nil && oldAccessGroup != accessGroup {
-            try? KeychainStore(service: service)._removeAll()
+            // Only clear the old keychain if the shared keychain doesn't already have items.
+            // This prevents data loss when an app extension (e.g., widget) initializes before
+            // the main app has a chance to record the migration in UserDefaults, since
+            // UserDefaults is not shared between app and extensions.
+            if !sharedKeychainHasItems(accessGroup: accessGroup) {
+                try? KeychainStore(service: service)._removeAll()
+            }
         }
 
         saveStoredAccessGroup()
 
-        if !userDefaults.bool(forKey: isKeychainConfiguredKey) {
-            // We can't reliably clear credentials if the Keychain has a shared access group.
-            // This is because each app/extension has its own UserDefaults.
-            // If a user authenticates in an app, the app or extension that shares the keychain would clear the shared credentials.
-            // We must only clear credentials if a shared Keychain is not being used.
-            if accessGroup == nil {
-                try? clearAllCredentials() // clear if not using shared keychain
-            }
-            userDefaults.set(true, forKey: isKeychainConfiguredKey)
-        }
+        // NOTE: We intentionally do NOT clear keychain credentials on app reinstall.
+        // Previously, this code checked a UserDefaults flag (isKeychainConfiguredKey) to detect
+        // fresh installs and clear orphaned keychain items. However, this approach was unreliable
+        // because UserDefaults can return false during iOS prewarming (background app launch after
+        // device reboot) when protected data is not yet available. This caused valid credentials
+        // to be incorrectly cleared, resulting in random user logouts.
+        //
+        // Keychain items persisting across app reinstalls is iOS's default behavior. Any stale
+        // credentials will naturally fail authentication and trigger a proper sign-out flow.
+        // See: https://github.com/aws-amplify/amplify-swift/issues/3972
 
         restoreCredentialsOnConfigurationChanges(currentAuthConfig: authConfiguration)
         // Save the current configuration
@@ -147,7 +148,7 @@ struct AWSCognitoAuthCredentialStore {
         for username: String,
         with configuration: AuthConfiguration
     ) -> String {
-            return "\(storeKey(for: authConfiguration)).\(username).\(deviceMetadataKey)"
+            return "\(storeKey(for: authConfiguration)).\(username.lowercased()).\(deviceMetadataKey)"
     }
 
     private func generateASFDeviceKey(
@@ -267,6 +268,15 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
             return
         }
 
+        // If the shared keychain already has items, migration has already occurred
+        // (likely by the main app). Skip migration to prevent data loss.
+        // This check is necessary because UserDefaults is not shared between app and extensions,
+        // so the extension may not know that migration already happened.
+        if sharedKeychainHasItems(accessGroup: accessGroup) {
+            log.info("[AWSCognitoAuthCredentialStore] Shared keychain already has items, migration already completed, aborting")
+            return
+        }
+
         let oldService = oldAccessGroup != nil ? sharedService : service
         let newService = accessGroup != nil ? sharedService : service
 
@@ -278,6 +288,17 @@ extension AWSCognitoAuthCredentialStore: AmplifyAuthCredentialStoreBehavior {
         }
 
         log.verbose("[AWSCognitoAuthCredentialStore] Migration of keychain items from old access group to new access group successful")
+    }
+
+    /// Checks if the shared keychain (with the given access group) already contains items.
+    /// This is used to determine if migration has already occurred, which helps prevent
+    /// data loss when app extensions initialize with their own UserDefaults that don't
+    /// reflect the migration state recorded by the main app.
+    private func sharedKeychainHasItems(accessGroup: String?) -> Bool {
+        guard let accessGroup else { return false }
+
+        let sharedKeychain = KeychainStore(service: sharedService, accessGroup: accessGroup)
+        return (try? sharedKeychain._hasItems()) ?? false
     }
 
 }
