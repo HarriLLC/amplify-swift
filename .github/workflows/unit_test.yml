@@ -34,9 +34,10 @@ on:
         default: true
         type: boolean 
       
+  # Feature-branch pushes (PR CI) run a reduced platform set; pushes to main run the full matrix
+  # (see the platform selection in `detect`). release is built by its own pipeline.
   push:
     branches-ignore:
-      - main
       - release
 
 permissions:
@@ -47,72 +48,118 @@ concurrency:
   cancel-in-progress: ${{ github.ref_name != 'main'}}
 
 jobs:
+  detect:
+    name: Detect affected targets
+    # Runs on ubuntu (abundant pool) rather than macOS (the scarce, shared Actions pool this gating
+    # effort conserves). Needs only git, jq, python3, and `swift package dump-package`; the official
+    # swift image supplies Swift on Linux with no third-party action, and the manifest has no host-OS
+    # conditionals so the dumped dependency graph matches macOS.
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    outputs:
+      cov: ${{ steps.sel.outputs.cov }}
+      nocov: ${{ steps.sel.outputs.nocov }}
+      covfiles: ${{ steps.sel.outputs.covfiles }}
+      platforms: ${{ steps.sel.outputs.platforms }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install jq and python3
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends jq python3
+          # The checkout dir is owned by a different UID than the container's root user, so git in
+          # the detect script below aborts with "detected dubious ownership" unless we allow it.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - id: sel
+        shell: bash
+        env:
+          IDENTIFIER: ${{ inputs.identifier }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
+        run: |
+          # A "full" run (deploy via workflow_call/identifier, manual dispatch, or a push to main)
+          # exercises every scheme; only a genuine feature-branch push (PR CI) is change-gated.
+          if [ -n "$IDENTIFIER" ] || [ "$EVENT_NAME" != "push" ] || [ "$GITHUB_REF_NAME" = "main" ]; then
+            sel=$(jq -c 'keys' scripts/python/unit_test_groups.json)
+          else
+            base="$BASE_REF"
+            git fetch --no-tags origin "$base" || true
+            git diff --name-only "$(git merge-base HEAD "origin/$base")" HEAD > /tmp/changed.txt
+            swift package dump-package > /tmp/package.json
+            sel=$(python3 scripts/python/affected_targets.py \
+              --package /tmp/package.json --changed /tmp/changed.txt \
+              --groups scripts/python/unit_test_groups.json | grep '^selected=' | cut -d= -f2-)
+          fi
+          echo "selected: $sel"
+
+          # Platform set. Feature-branch PR CI runs only iOS + macOS (the full 5-platform matrix is
+          # too slow/heavy for every PR). Deploys (identifier), manual dispatch, and pushes to main
+          # run the full matrix — on dispatch, run_unit_tests_platforms's exclude block then trims it
+          # to the per-platform toggles.
+          if [ -n "$IDENTIFIER" ] || [ "$EVENT_NAME" != "push" ] || [ "$GITHUB_REF_NAME" = "main" ]; then
+            platforms='["iOS", "macOS", "tvOS", "watchOS", "visionOS"]'
+          else
+            platforms='["iOS", "macOS"]'
+          fi
+          echo "platforms: $platforms"
+
+          # Coverage matrix: the selected schemes that carry codecov flags (excludes the
+          # no-coverage InternalAWSPinpointUnitTests, which has no `flags`).
+          covfiles=$(jq -c --argjson sel "$sel" \
+            '[to_entries[] | select(.value.flags != null and (.key as $k | $sel | index($k))) | {scheme: .key, flags: .value.flags}]' \
+            scripts/python/unit_test_groups.json)
+          {
+            echo "nocov=$(jq -c '[.[]|select(.=="InternalAWSPinpointUnitTests")]' <<<"$sel")"
+            echo "cov=$(jq -c '[.[]|select(.!="InternalAWSPinpointUnitTests")]' <<<"$sel")"
+            echo "covfiles=$covfiles"
+            echo "platforms=$platforms"
+          } >> "$GITHUB_OUTPUT"
+
   targets-without-coverage:
     name: ${{ matrix.scheme }} Unit Tests
+    needs: detect
+    if: ${{ needs.detect.outputs.nocov != '[]' }}
     strategy:
       fail-fast: false
+      # Cap concurrent schemes so the workflow uses at most ~10 schemes x its platforms of the
+      # shared macOS runner pool at once, instead of fanning out every affected scheme simultaneously.
+      max-parallel: 10
       matrix:
-        scheme: [
-          InternalAWSPinpointUnitTests
-        ]
+        scheme: ${{ fromJSON(needs.detect.outputs.nocov) }}
     uses: ./.github/workflows/run_unit_tests_platforms.yml
     with:
       scheme: ${{ matrix.scheme }}
       generate_coverage_report: false
+      platforms: ${{ needs.detect.outputs.platforms }}
 
   targets-with-coverage:
     name: ${{ matrix.scheme }} Unit Tests
+    needs: detect
+    if: ${{ needs.detect.outputs.cov != '[]' }}
     strategy:
       fail-fast: false
+      # Cap concurrent schemes so the workflow uses at most ~10 schemes x its platforms of the
+      # shared macOS runner pool at once, instead of fanning out every affected scheme simultaneously.
+      max-parallel: 10
       matrix:
-        scheme: [
-          Amplify,
-          AWSPluginsCore,
-          AWSAPIPlugin,
-          AWSCloudWatchLoggingPlugin,
-          AWSCognitoAuthPlugin,
-          AWSDataStorePlugin,
-          AmplifyRecordCache,
-          AmplifyKinesisClient,
-          AmplifyFirehoseClient,
-          AWSLocationGeoPlugin,
-          AWSPredictionsPlugin,
-          AWSPinpointAnalyticsPlugin,
-          AWSPinpointPushNotificationsPlugin,
-          AWSS3StoragePlugin,
-          AmplifyFoundation,
-          AmplifyFoundationBridge
-        ]
+        scheme: ${{ fromJSON(needs.detect.outputs.cov) }}
     uses: ./.github/workflows/run_unit_tests_platforms.yml
     with:
       scheme: ${{ matrix.scheme }}
       generate_coverage_report: ${{ vars.DISABLE_COVERAGE_REPORT != 'true' }}
+      platforms: ${{ needs.detect.outputs.platforms }}
 
   report-coverage:
-    if: ${{ vars.DISABLE_COVERAGE_REPORT != 'true' }}
+    needs: [detect, targets-with-coverage]
+    if: ${{ vars.DISABLE_COVERAGE_REPORT != 'true' && needs.detect.outputs.covfiles != '[]' }}
     name: ${{ matrix.file.scheme }} Unit Tests
-    needs: [targets-with-coverage]
     strategy:
       fail-fast: false
       matrix:
-        file: [
-          { scheme: Amplify, flags: 'Amplify,unit_tests' },
-          { scheme: AWSPluginsCore, flags: 'AWSPluginsCore,unit_tests' },
-          { scheme: AWSAPIPlugin, flags: 'API_plugin_unit_test,unit_tests' },
-          { scheme: AWSCloudWatchLoggingPlugin, flags: 'Logging_plugin_unit_test,unit_tests' },
-          { scheme: AWSCognitoAuthPlugin, flags: 'Auth_plugin_unit_test,unit_tests' },
-          { scheme: AWSDataStorePlugin, flags: 'DataStore_plugin_unit_test,unit_tests' },
-          { scheme: AmplifyRecordCache, flags: 'RecordCache_unit_test,unit_tests' },
-          { scheme: AmplifyKinesisClient, flags: 'Kinesis_plugin_unit_test,unit_tests' },
-          { scheme: AmplifyFirehoseClient, flags: 'Firehose_plugin_unit_test,unit_tests' },
-          { scheme: AWSLocationGeoPlugin, flags: 'Geo_plugin_unit_test,unit_tests' },
-          { scheme: AWSPredictionsPlugin, flags: 'Predictions_plugin_unit_test,unit_tests' },
-          { scheme: AWSPinpointAnalyticsPlugin, flags: 'Analytics_plugin_unit_test,unit_tests' },
-          { scheme: AWSPinpointPushNotificationsPlugin, flags: 'PushNotifications_plugin_unit_test,unit_tests' },
-          { scheme: AWSS3StoragePlugin, flags: 'Storage_plugin_unit_test,unit_tests' },
-          { scheme: AmplifyFoundation, flags: 'Amplify_Foundation_unit_test,unit_tests' },
-          { scheme: AmplifyFoundationBridge, flags: 'Amplify_Foundation_Bridge_unit_test,unit_tests' }
-        ]
+        file: ${{ fromJSON(needs.detect.outputs.covfiles) }}
     uses: ./.github/workflows/upload_coverage_report.yml
     with:
       scheme: ${{ matrix.file.scheme }}
@@ -124,6 +171,7 @@ jobs:
     name: Confirm Passing Unit Tests
     if: ${{ !cancelled() }}
     needs: [
+      detect,
       targets-with-coverage,
       targets-without-coverage
     ]

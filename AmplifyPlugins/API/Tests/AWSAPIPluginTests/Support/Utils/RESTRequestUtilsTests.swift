@@ -9,7 +9,9 @@ import XCTest
 @testable import Amplify
 @testable import AWSAPIPlugin
 
-class RESTRequestUtilsTests: XCTestCase {
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+class RESTRequestUtilsTests: XCTestCase, @unchecked Sendable {
     private func assertQueryParameters(
         testCase: Int,
         withURL url: URL,
@@ -117,6 +119,44 @@ class RESTRequestUtilsTests: XCTestCase {
             testCase: 0,
             withURL: resultURL,
             expected: queryParams
+        )
+    }
+
+    /// A `;` in a value must be percent-encoded so servers don't treat it as a separator.
+    func testConstructURLWithSemicolonInValue() throws {
+        let baseURL = URL(string: "https://aws.amazon.com")!
+        let queryParams = ["filter": "X;Y"]
+        let expected = ["filter": "X%3BY"]
+
+        let resultURL = try RESTOperationRequestUtils.constructURL(
+            for: baseURL,
+            withPath: "/items",
+            withParams: queryParams
+        )
+
+        try assertQueryParameters(
+            testCase: 0,
+            withURL: resultURL,
+            expected: expected
+        )
+    }
+
+    /// A pre-encoded `;` (`%3B`) must be preserved, not decoded and left bare.
+    func testConstructURLWithPreEncodedSemicolonInValue() throws {
+        let baseURL = URL(string: "https://aws.amazon.com")!
+        let queryParams = ["filter": "X%3BY"]
+        let expected = ["filter": "X%3BY"]
+
+        let resultURL = try RESTOperationRequestUtils.constructURL(
+            for: baseURL,
+            withPath: "/items",
+            withParams: queryParams
+        )
+
+        try assertQueryParameters(
+            testCase: 0,
+            withURL: resultURL,
+            expected: expected
         )
     }
 }

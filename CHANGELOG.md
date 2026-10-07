@@ -1,5 +1,98 @@
 # Changelog
 
+## 2.62.0 (2026-09-23)
+
+### Features
+
+- **core**: adopt the Swift 6 language mode
+- enable the Swift 6 language mode
+- **analytics**: Sendable across Pinpoint, Analytics, Geo and Push
+- **logging**: Sendable across the Logging plugin
+- **predictions**: Sendable across the Predictions plugin
+- **storage**: Sendable across the Storage plugin
+- **api**: Sendable across the API plugin
+- **datastore**: Sendable across the DataStore plugin
+- **auth**: Sendable across the rest of the Auth plugin
+- **auth**: Sendable across the Cognito state machine
+- **core**: Sendable across AWSPluginsCore
+- **core**: Sendable for remaining Amplify core files
+- **core**: Sendable for the built-in default plugins
+- **core**: Sendable for the remaining category models
+- **auth**: Sendable for Auth category models
+- **storage**: )!: tighten StoragePath.resolve to a Sendable closure
+- **storage**: )!: @Sendable progress listeners
+- **core**: )!: @Sendable Hub listeners and filters
+- **datastore**: )!: @Sendable DataStore callbacks
+- **datastore**: annotate the lazy-loading types
+- **datastore**: )!: require Sendable on Model
+- **core**: Sendable for core support and task types
+- **core**: )!: require Sendable on Plugin and Category
+
+### Bug Fixes
+
+- **core**: add @preconcurrency to @Sendable closure entry points for Swift 5 source compatibility (#4339)
+- resolve Swift 6 data-race errors in tests merged from main
+- **logging**: route the CloudWatch client's shared state through its lock
+- **core**: snapshot the user-agent platform mapping in one locked read
+- **api**: cancel NondeterminsticOperation under a single lock acquisition
+- **auth**: make the tvOS and watchOS presentation-anchor placeholder Sendable
+- **api**: serialize watchOS AmplifyReachability state
+- **core**: make DevMenu concurrency-safe
+- **api**: drop the needless actor hop when logging websocket termination
+- **api**: stop AppSyncRealTimeClient's sink from inheriting actor isolation
+- **analytics**: keep ActivityTracker registration synchronous
+- **core**: close the unconfigured-Auth crash window instead of documenting it
+- **core**: report an unconfigured Auth category instead of aborting
+- **core**: synchronize AmplifyAsyncSequence cancellation
+
+## 2.61.0 (2026-09-15)
+
+### Features
+
+- **cloudwatch**: add CloudWatch client (#4219)
+
+### Bug Fixes
+
+- **DataStore**: prevent crash in save() when the transaction fails to commit (#4335)
+- **cloudwatch**: enable client integration tests and fix log-flush data-loss race (#4337)
+- **storage**: serialize multipart upload state machine access to prevent thread-safety crashes (#4285)
+- **ci**: pass untrusted GitHub context via env to prevent workflow script injection (#4286)
+
+## 2.60.2 (2026-09-01)
+
+### Bug Fixes
+
+- **auth**: preserve user pool tokens when no identity pool is configured (#4280)
+- **api**: stop AppSync reconnect and re-subscribe loop on non-recoverable errors (#4277)
+- **auth**: Refresh rejected identity ID (#4281)
+- **api**: percent-encode semicolons in REST query parameter values (#4274)
+
+## 2.60.1 (2026-08-04)
+
+### Bug Fixes
+
+- **auth**: key device metadata by inputUsername so alias sign-in pools remember devices (#4254)
+
+## 2.60.0 (2026-08-03)
+
+### Features
+
+- add event enrichment client (#4243)
+
+## 2.59.0 (2026-07-30)
+
+### Features
+
+- add connect client (#4245)
+
+## 2.58.5 (2026-07-27)
+
+### Bug Fixes
+
+- **predictions**: fix Face Liveness with temporary credentials on iOS 26 (URL signing + Sendable credentials) (#4248)
+- **auth,push**: prevent command injection in WebAuthn/Push test LocalServers (#4252)
+- **auth**: fix visionOS build failure in WebAuthn credential registration (#4250)
+
 ## 2.58.4 (2026-06-30)
 
 ### Bug Fixes

@@ -5,20 +5,23 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if canImport(Speech)
+// See CoreMLSpeechBehavior for why tvOS is excluded here.
+#if canImport(Speech) && !os(tvOS)
 import Amplify
 import Speech
 import XCTest
 @testable import CoreMLPredictionsPlugin
 
-class MockCoreMLSpeechAdapter: CoreMLSpeechBehavior {
-    var response: SFSpeechRecognitionResult
+/// Returns `CoreMLSpeechTranscription` to match `CoreMLSpeechBehavior`, which no longer hands back a
+/// non-`Sendable` `SFSpeechRecognitionResult`.
+final class MockCoreMLSpeechAdapter: CoreMLSpeechBehavior {
+    let response: CoreMLSpeechTranscription
 
-    init(response: SFSpeechRecognitionResult) {
+    init(response: CoreMLSpeechTranscription) {
         self.response = response
     }
 
-    func getTranscription(_ audioData: URL) async throws -> SFSpeechRecognitionResult {
+    func getTranscription(_ audioData: URL) async throws -> CoreMLSpeechTranscription {
         response
     }
 }

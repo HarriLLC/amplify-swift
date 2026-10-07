@@ -21,7 +21,17 @@ typealias StorageEngineBehaviorFactory =
     ) throws -> StorageEngineBehavior
 
 // swiftlint:disable type_body_length
-final class StorageEngine: StorageEngineBehavior {
+/// - Note: `@unchecked Sendable` to satisfy `StorageEngineBehavior`'s `Sendable` requirement, with no
+///   lock or serial queue backing it.
+///
+///   `syncEngine`, `signInListener` and the Combine sinks are plain `var`s. `syncEngine` is read on the
+///   hot mutation path — `save` and `delete` forward to it — and written during start-up and `clear`, so
+///   a `clear` concurrent with an in-flight mutation races on a class reference. The ordering that makes
+///   this work in practice comes from the plugin driving start-up and teardown in sequence, not from
+///   anything in this type.
+///
+///   The exposure predates this annotation, which only stops the compiler from asking about it.
+final class StorageEngine: StorageEngineBehavior, @unchecked Sendable {
     // TODO: Make this private once we get a mutation flow that passes the type of mutation as needed
     let storageAdapter: StorageEngineAdapter
     var syncEngine: RemoteSyncEngineBehavior?
@@ -219,7 +229,17 @@ final class StorageEngine: StorageEngineBehavior {
             return
         }
 
+        // Invoke `completion` exactly once, always after the transaction has closed: doing it both
+        // inside the transaction body and in `catch` double-resumed the continuation.
+        // https://github.com/aws-amplify/amplify-swift/issues/3716
+        let saveResult: DataStoreResult<M>
+        var handoff: (model: M, syncEngine: RemoteSyncEngineBehavior)?
         do {
+            var localSaveResult: DataStoreResult<M> = .failure(.unknown(
+                "Save transaction did not run.",
+                AmplifyErrorMessages.shouldNotHappenReportBugToAWS(),
+                nil
+            ))
             try storageAdapter.transaction {
                 let result = self.storageAdapter.save(
                     model,
@@ -227,17 +247,13 @@ final class StorageEngine: StorageEngineBehavior {
                     condition: condition,
                     eagerLoad: eagerLoad
                 )
-                guard modelSchema.isSyncable else {
-                    completion(result)
+                localSaveResult = result
+
+                guard modelSchema.isSyncable, case .success(let savedModel) = result else {
                     return
                 }
 
-                guard case .success(let savedModel) = result else {
-                    completion(result)
-                    return
-                }
-
-                guard let syncEngine else {
+                guard let syncEngine = self.syncEngine else {
                     let message = "No SyncEngine available to sync mutation event, rollback save."
                     self.log.verbose("\(#function) \(message) : \(savedModel)")
                     throw DataStoreError.internalOperation(
@@ -246,19 +262,28 @@ final class StorageEngine: StorageEngineBehavior {
                         nil
                     )
                 }
-                self.log.verbose("\(#function) syncing mutation for \(savedModel)")
-                self.syncMutation(
-                    of: savedModel,
-                    modelSchema: modelSchema,
-                    mutationType: mutationType,
-                    predicate: condition,
-                    syncEngine: syncEngine,
-                    completion: completion
-                )
+                handoff = (savedModel, syncEngine)
             }
+            saveResult = localSaveResult
         } catch {
             completion(.failure(causedBy: error))
+            return
         }
+
+        guard let handoff else {
+            completion(saveResult)
+            return
+        }
+
+        log.verbose("\(#function) syncing mutation for \(handoff.model)")
+        syncMutation(
+            of: handoff.model,
+            modelSchema: modelSchema,
+            mutationType: mutationType,
+            predicate: condition,
+            syncEngine: handoff.syncEngine,
+            completion: completion
+        )
     }
 
     func save<M: Model>(
@@ -282,7 +307,7 @@ final class StorageEngine: StorageEngineBehavior {
         modelSchema: ModelSchema,
         withId id: Model.Identifier,
         condition: QueryPredicate? = nil,
-        completion: @escaping (DataStoreResult<M?>) -> Void
+        completion: @escaping @Sendable (DataStoreResult<M?>) -> Void
     ) {
         let cascadeDeleteOperation = CascadeDeleteOperation(
             storageAdapter: storageAdapter,
@@ -337,7 +362,7 @@ final class StorageEngine: StorageEngineBehavior {
         sort: [QuerySortDescriptor]?,
         paginationInput: QueryPaginationInput?,
         eagerLoad: Bool = true,
-        completion: (DataStoreResult<[M]>) -> Void
+        completion: @escaping DataStoreCallback<[M]>
     ) {
         return storageAdapter.query(
             modelType,
@@ -356,7 +381,7 @@ final class StorageEngine: StorageEngineBehavior {
         sort: [QuerySortDescriptor]? = nil,
         paginationInput: QueryPaginationInput? = nil,
         eagerLoad: Bool = true,
-        completion: DataStoreCallback<[M]>
+        completion: @escaping DataStoreCallback<[M]>
     ) {
         query(
             modelType,

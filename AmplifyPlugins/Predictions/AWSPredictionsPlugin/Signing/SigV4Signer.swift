@@ -116,7 +116,8 @@ import Foundation
                                                                                                         │
      └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
 */
-struct SigV4Signer {
+/// - Note: `Sendable` because the signer is captured by the liveness session's send path.
+struct SigV4Signer: Sendable {
     let credential: Credential
     // e.g. "rekognition"
     let serviceName: String
@@ -129,7 +130,9 @@ struct SigV4Signer {
     // previous signature (if it exists) to use
     // in subsequent signing requests as needed.
     let _storage = PreviousSignatureStorage()
-    final class PreviousSignatureStorage {
+    /// - Note: `@unchecked Sendable`: this is a one-slot cache written and read on the liveness
+    ///   session's own send path, which is serialized.
+    final class PreviousSignatureStorage: @unchecked Sendable {
         var previousSignature: String?
     }
 
@@ -202,8 +205,13 @@ struct SigV4Signer {
             serviceName: serviceName
         )
 
+        let existingQuery = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?
+            .map { "\($0.name)=\($0.value ?? "")" }
+            .joined(separator: "&")
+
         let canonicalQueryString = _canonicalQueryString(
-            query: url.query,
+            query: existingQuery,
             signedHeaders: signedHeaders,
             timestamp: timestamp,
             credentialScope: credentialScope,
@@ -325,7 +333,7 @@ struct SigV4Signer {
 
         let sorted = canonicalQueryString.split(separator: "&")
             .map {
-                String($0).split(separator: "=")
+                String($0).split(separator: "=", maxSplits: 1)
                     .map(String.init)
                     .map(PercentEncoding.uri.encode)
                     .joined(separator: "=")

@@ -11,6 +11,7 @@ import AWSCloudWatchLogs
 import AWSPluginsCore
 import Combine
 import Foundation
+import InternalCloudWatchLogging
 @_spi(PluginHTTPClientEngine) import InternalAmplifyCredentials
 import Network
 import SmithyIdentity
@@ -19,7 +20,9 @@ import SmithyIdentity
 /// user authentication sessions.
 ///
 /// - Tag: CloudWatchLogSessionController
-final class AWSCloudWatchLoggingSessionController {
+/// - Note: `@unchecked Sendable`: mutable state is established during setup and not written
+///   concurrently with reads.
+final class AWSCloudWatchLoggingSessionController: @unchecked Sendable {
 
     var client: CloudWatchLogsClientProtocol?
     let namespace: String?

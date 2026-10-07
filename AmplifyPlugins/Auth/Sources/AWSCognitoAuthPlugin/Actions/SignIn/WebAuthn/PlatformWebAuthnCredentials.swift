@@ -10,7 +10,9 @@ import Amplify
 import AuthenticationServices
 import Foundation
 
-protocol WebAuthnCredentialsProtocol {
+/// - Note: `Sendable` because the WebAuthn actions holding these conform to `Action`, which is
+///   `Sendable`.
+protocol WebAuthnCredentialsProtocol: Sendable {
     var presentationAnchor: AuthUIPresentationAnchor? { get }
 }
 
@@ -25,8 +27,11 @@ protocol CredentialAsserterProtocol: WebAuthnCredentialsProtocol {
 }
 
 // - MARK: WebAuthnCredentialsProtocol
+/// - Note: `final` and `@unchecked Sendable`: the two continuations are set immediately before the
+///   platform WebAuthn controller is presented and resumed from its delegate callbacks, so only one
+///   is live at a time.
 @available(iOS 17.4, macOS 13.5, visionOS 1.0, *)
-class PlatformWebAuthnCredentials: NSObject, WebAuthnCredentialsProtocol {
+final class PlatformWebAuthnCredentials: NSObject, WebAuthnCredentialsProtocol, @unchecked Sendable {
     private enum OperationType: String {
         case assert
         case register
@@ -113,9 +118,12 @@ extension PlatformWebAuthnCredentials: CredentialRegistrantProtocol {
             name: options.user.name,
             userID: options.user.id
         )
+#if !os(visionOS)
+        // `excludedCredentials` is not available on visionOS
         platformKeyRequest.excludedCredentials = options.excludeCredentials.compactMap { credential in
             return .init(credentialID: credential.id)
         }
+#endif
 
         return try await withCheckedThrowingContinuation { continuation in
             registrationContinuation = continuation

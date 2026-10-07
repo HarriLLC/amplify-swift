@@ -46,8 +46,17 @@ actor AppSyncRealTimeClient: AppSyncRealTimeClientProtocol {
 
     /// WebSocketClient offering connections at the WebSocket protocol level
     var webSocketClient: AppSyncWebSocketClientProtocol
+    /// Guards against overlapping reconnect attempts from the heartbeat-timeout
+    /// and connection-drop paths.
+    private var isReconnecting = false
     /// Writable data stream convert WebSocketEvent to AppSyncRealTimeResponse
-    nonisolated let subject = PassthroughSubject<Result<AppSyncRealTimeResponse, Error>, Never>()
+    /// Backing store for ``subject``. `PassthroughSubject` is not `Sendable` but `send` is safe from
+    /// any thread, and this is `nonisolated` so it can be reached without hopping onto the actor.
+    private nonisolated let subjectBox = UncheckedSendable(PassthroughSubject<Result<AppSyncRealTimeResponse, Error>, Never>())
+
+    nonisolated var subject: PassthroughSubject<Result<AppSyncRealTimeResponse, Error>, Never> {
+        subjectBox.value
+    }
 
     var isConnected: Bool {
         state.value == .connected
@@ -78,10 +87,11 @@ actor AppSyncRealTimeClient: AppSyncRealTimeClientProtocol {
     }
 
     deinit {
+        // Only the subject is touched here: a nonisolated `deinit` cannot reach actor-isolated state
+        // in Swift 6 mode, and clearing the cancellable sets was already redundant because releasing
+        // the actor's storage deinitializes each `AnyCancellable`, which cancels it.
         log.debug("Deinit AppSyncRealTimeClient")
         subject.send(completion: .finished)
-        cancellables = Set()
-        cancellablesBindToConnection = Set()
     }
 
     /**
@@ -106,13 +116,25 @@ actor AppSyncRealTimeClient: AppSyncRealTimeClientProtocol {
         state.send(.connecting)
         log.debug("[AppSyncRealTimeClient] client start connecting")
 
-        try await RetryWithJitter.execute { [weak self] in
-            guard let self else { return }
-            await webSocketClient.connect(
-                autoConnectOnNetworkStatusChange: true,
-                autoRetryOnConnectionFailure: true
-            )
-            try await sendRequest(.connectionInit)
+        do {
+            try await RetryWithJitter.execute(shouldRetryOnError: Self.shouldRetryConnection) { [weak self] in
+                guard let self else { return }
+                await webSocketClient.connect(
+                    autoConnectOnNetworkStatusChange: true,
+                    autoRetryOnConnectionFailure: true
+                )
+                try await sendRequest(.connectionInit)
+            }
+        } catch {
+            // Give up on a non-recoverable error (e.g. expired auth): turn off the
+            // socket's auto-retry so it stops reconnecting into the same failure.
+            // The error is surfaced to subscribers; a fresh subscribe() can reconnect.
+            if Self.isNonRecoverable(error) {
+                log.debug("[AppSyncRealTimeClient] Non-recoverable error, stopping reconnect")
+                await webSocketClient.disconnect()
+                state.send(.disconnected)
+            }
+            throw error
         }
     }
 
@@ -235,16 +257,17 @@ actor AppSyncRealTimeClient: AppSyncRealTimeClientProtocol {
 
     }
 
+    // Both closures are `@Sendable` so they do not inherit this actor's isolation. Combine calls them
+    // synchronously on whichever thread published the event, which would trip the isolation check at
+    // runtime if they were actor-isolated. Reaching actor-isolated members therefore needs an explicit
+    // hop — but `log` is `nonisolated`, so logging stays a direct synchronous call as before.
     private func subscribeToWebSocketEvent() async {
-        let cancellable = await webSocketClient.publisher.sink { [weak self] _ in
+        let cancellable = await webSocketClient.publisher.sink { @Sendable [weak self] _ in
             self?.log.debug("[AppSyncRealTimeClient] WebSocketClient terminated")
-        } receiveValue: { webSocketEvent in
-            Task { [weak self] in
-                let task = Task { [weak self] in
-                    await self?.onWebSocketEvent(webSocketEvent)
-                }
-                await self?.storeInCancellables(task.toAnyCancellable)
-            }
+        } receiveValue: { @Sendable [weak self] webSocketEvent in
+            guard let self else { return }
+            let task = Task { await self.onWebSocketEvent(webSocketEvent) }
+            Task { await self.storeInCancellables(task.toAnyCancellable) }
         }
         storeInCancellables(cancellable)
     }
@@ -314,6 +337,14 @@ actor AppSyncRealTimeClient: AppSyncRealTimeClientProtocol {
     }
 
     private func reconnect() async {
+        // Single-flight: the heartbeat-timeout and connection-drop paths can both
+        // trigger a reconnect; without this guard each opens its own connection.
+        guard !isReconnecting else {
+            log.debug("[AppSyncRealTimeClient] Reconnect already in progress, skipping")
+            return
+        }
+        isReconnecting = true
+        defer { isReconnecting = false }
         do {
             log.debug("[AppSyncRealTimeClient] Reconnecting")
             await disconnect()
@@ -321,6 +352,28 @@ actor AppSyncRealTimeClient: AppSyncRealTimeClientProtocol {
         } catch {
             log.debug("[AppSyncRealTimeClient] Failed to reconnect, error: \(error)")
         }
+    }
+
+    static func isNonRecoverable(_ error: Swift.Error) -> Bool {
+        if let requestError = error as? AppSyncRealTimeRequest.Error {
+            switch requestError {
+            case .unauthorized, .maxSubscriptionsReached, .limitExceeded:
+                return true
+            case .timeout, .unknown:
+                return false
+            }
+        }
+        return false
+    }
+
+    static func shouldRetryConnection(_ error: Swift.Error) -> Bool {
+        // Cancellation is intentional; never retry it (avoids a busy-loop).
+        if error is CancellationError {
+            return false
+        }
+        // Non-recoverable errors (auth/limits) can never succeed on retry;
+        // retrying them just re-hammers AppSync with new connections.
+        return !isNonRecoverable(error)
     }
 
     private static func decodeAppSyncRealTimeResponseError(_ data: JSONValue?) -> [Error] {
@@ -368,9 +421,9 @@ extension AppSyncRealTimeClient {
                 log.debug("[AppSyncRealTimeClient] reconnecting appSyncClient after connection drop")
                 Task { [weak self] in
                     let task = Task { [weak self] in
-                        try? await self?.connect()
+                        await self?.reconnect()
                     }
-                    await self?.storeInConnectionCancellables(task.toAnyCancellable)
+                    await self?.storeInCancellables(task.toAnyCancellable)
                 }
             }
 

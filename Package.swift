@@ -1,15 +1,17 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
+// Swift 6.0 matches the minimum Swift toolchain supported by AWS SDK for Swift.
 import PackageDescription
 
 let platforms: [SupportedPlatform] = [
-    .iOS(.v13),
+    .iOS(.v15),
     .macOS(.v12),
-    .tvOS(.v13),
-    .watchOS(.v9)
+    .tvOS(.v15),
+    .watchOS(.v9),
+    .visionOS(.v1)
 ]
 let dependencies: [Package.Dependency] = [
-    .package(url: "https://github.com/awslabs/aws-sdk-swift", exact: "1.7.27"),
+    .package(url: "https://github.com/awslabs/aws-sdk-swift", exact: "1.7.60"),
     .package(url: "https://github.com/stephencelis/SQLite.swift.git", exact: "0.15.4"),
     .package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: "2.1.0"),
     .package(url: "https://github.com/aws-amplify/amplify-swift-utils-notifications.git", from: "1.1.0")
@@ -450,6 +452,29 @@ let firehoseTargets: [Target] = [
     )
 ]
 
+let eventEnrichmentTargets: [Target] = [
+    .target(
+        name: "AmplifyEventEnrichmentClient",
+        dependencies: [
+            .target(name: "AmplifyFoundation"),
+        ],
+        path: "AmplifyClients/AmplifyEventEnrichmentClient/Sources",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ],
+        swiftSettings: [
+            .enableUpcomingFeature("StrictConcurrency")
+        ]
+    ),
+    .testTarget(
+        name: "AmplifyEventEnrichmentClientTests",
+        dependencies: [
+            "AmplifyEventEnrichmentClient"
+        ],
+        path: "AmplifyClients/AmplifyEventEnrichmentClient/Tests/UnitTests"
+    )
+]
+
 let pushNotificationsTargets: [Target] = [
     .target(
         name: "AWSPinpointPushNotificationsPlugin",
@@ -469,6 +494,31 @@ let pushNotificationsTargets: [Target] = [
         ],
         path: "AmplifyPlugins/Notifications/Push/Tests/AWSPinpointPushNotificationsPluginUnitTests"
     )
+]
+
+let connectTargets: [Target] = [
+    .target(
+        name: "AmplifyConnectClient",
+        dependencies: [
+            .target(name: "AmplifyFoundation"),
+            .target(name: "AmplifyFoundationBridge"),
+            .product(name: "AWSClientRuntime", package: "aws-sdk-swift"),
+        ],
+        path: "AmplifyClients/AmplifyConnectClient/Sources",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ],
+        swiftSettings: [
+            .enableUpcomingFeature("StrictConcurrency")
+        ]
+    ),
+    .testTarget(
+        name: "AmplifyConnectClientTests",
+        dependencies: [
+            "AmplifyConnectClient"
+        ],
+        path: "AmplifyClients/AmplifyConnectClient/Tests/UnitTests"
+    ),
 ]
 
 let predictionsTargets: [Target] = [
@@ -524,11 +574,20 @@ let predictionsTargets: [Target] = [
 
 let loggingTargets: [Target] = [
     .target(
+        name: "InternalCloudWatchLogging",
+        dependencies: [],
+        path: "AmplifyPlugins/Internal/Sources/InternalCloudWatchLogging",
+        swiftSettings: [
+            .enableUpcomingFeature("StrictConcurrency")
+        ]
+    ),
+    .target(
         name: "AWSCloudWatchLoggingPlugin",
         dependencies: [
             .target(name: "Amplify"),
             .target(name: "AWSPluginsCore"),
             .target(name: "InternalAmplifyCredentials"),
+            .target(name: "InternalCloudWatchLogging"),
             .product(name: "AWSCloudWatchLogs", package: "aws-sdk-swift"),
         ],
         path: "AmplifyPlugins/Logging/Sources/AWSCloudWatchLoggingPlugin",
@@ -540,6 +599,7 @@ let loggingTargets: [Target] = [
         name: "AWSCloudWatchLoggingPluginTests",
         dependencies: [
             "AWSCloudWatchLoggingPlugin",
+            "InternalCloudWatchLogging",
             "AmplifyTestCommon",
             "AWSPluginsTestCommon"
         ],
@@ -548,6 +608,34 @@ let loggingTargets: [Target] = [
             .copy("TestResources")
         ]
     )
+]
+
+let cloudWatchLoggingClientTargets: [Target] = [
+    .target(
+        name: "AmplifyCloudWatchClient",
+        dependencies: [
+            .target(name: "AmplifyFoundation"),
+            .target(name: "AmplifyFoundationBridge"),
+            .target(name: "InternalCloudWatchLogging"),
+            .product(name: "AWSCloudWatchLogs", package: "aws-sdk-swift"),
+        ],
+        path: "AmplifyClients/AmplifyCloudWatchClient/Sources",
+        resources: [
+            .copy("Resources/PrivacyInfo.xcprivacy")
+        ],
+        swiftSettings: [
+            .enableUpcomingFeature("StrictConcurrency")
+        ]
+    ),
+    .testTarget(
+        name: "AmplifyCloudWatchClientTests",
+        dependencies: [
+            "AmplifyCloudWatchClient",
+            "InternalCloudWatchLogging",
+            .product(name: "AWSCloudWatchLogs", package: "aws-sdk-swift"),
+        ],
+        path: "AmplifyClients/AmplifyCloudWatchClient/Tests/UnitTests"
+    ),
 ]
 
 let foundationTargets: [Target] = [
@@ -592,10 +680,13 @@ targets.append(contentsOf: analyticsTargets)
 targets.append(contentsOf: recordCacheTargets)
 targets.append(contentsOf: kinesisTargets)
 targets.append(contentsOf: firehoseTargets)
+targets.append(contentsOf: connectTargets)
+targets.append(contentsOf: eventEnrichmentTargets)
 targets.append(contentsOf: pushNotificationsTargets)
 targets.append(contentsOf: internalPinpointTargets)
 targets.append(contentsOf: predictionsTargets)
 targets.append(contentsOf: loggingTargets)
+targets.append(contentsOf: cloudWatchLoggingClientTargets)
 targets.append(contentsOf: foundationTargets)
 targets.append(contentsOf: foundationBridgeTargets)
 
@@ -660,6 +751,18 @@ let package = Package(
             targets: ["AmplifyFirehoseClient"]
         ),
         .library(
+            name: "AmplifyConnectClient",
+            targets: ["AmplifyConnectClient"]
+        ),
+        .library(
+            name: "AmplifyEventEnrichmentClient",
+            targets: ["AmplifyEventEnrichmentClient"]
+        ),
+        .library(
+            name: "AmplifyCloudWatchClient",
+            targets: ["AmplifyCloudWatchClient"]
+        ),
+        .library(
             name: "AmplifyFoundation",
             targets: ["AmplifyFoundation"]
         ),
@@ -669,5 +772,9 @@ let package = Package(
         ),
     ],
     dependencies: dependencies,
-    targets: targets
+    targets: targets,
+    // Every target builds in the Swift 6 language mode, so strict concurrency checking is enforced
+    // package-wide rather than per target. Set last in this migration: until it flips, `Sendable`
+    // violations are warnings, which is what let the preceding changes land incrementally.
+    swiftLanguageModes: [.v6]
 )

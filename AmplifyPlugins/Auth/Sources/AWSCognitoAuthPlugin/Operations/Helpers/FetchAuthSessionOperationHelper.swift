@@ -10,7 +10,9 @@ import Amplify
 import AWSPluginsCore
 import Foundation
 
-class FetchAuthSessionOperationHelper {
+/// - Note: `final` and `@unchecked Sendable`: the helper is used from detached auth tasks and its
+///   state is confined to a single fetch.
+final class FetchAuthSessionOperationHelper: @unchecked Sendable {
 
     typealias FetchAuthSessionCompletion = (Result<AuthSession, AuthError>) -> Void
     var environment: Environment?
@@ -132,9 +134,12 @@ class FetchAuthSessionOperationHelper {
         }
 
         switch error {
-        case .sessionError(let fetchError, _):
+        case .sessionError(let fetchError, let credentials):
             if (fetchError == .notAuthorized || fetchError == .noCredentialsToRefresh) && !isSignedIn {
                 return AuthCognitoSignedOutSessionHelper.makeSessionWithNoGuestAccess()
+            } else if case .noIdentityPool = fetchError {
+                // A missing identity pool must not fail the user-pool token result.
+                return credentials.cognitoSession
             } else {
                 authError = fetchError.authError
             }

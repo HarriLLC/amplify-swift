@@ -5,12 +5,14 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if canImport(Speech) && canImport(Vision)
+#if canImport(Speech) && canImport(Vision) && !os(tvOS)
 import CoreMLPredictionsPlugin
 import XCTest
 @testable import Amplify
 
-class CoreMLPredictionsPluginConfigTests: XCTestCase {
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+class CoreMLPredictionsPluginConfigTests: XCTestCase, @unchecked Sendable {
 
     override func setUp() async throws {
         await Amplify.reset()

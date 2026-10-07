@@ -50,25 +50,36 @@ jobs:
       platform: ${{ matrix.platform }}
       project_path: ./AmplifyPlugins/Auth/Tests/AuthHostApp/
       resource_subfolder: auth
-      timeout-minutes: 30
+      timeout-minutes: 60
     secrets: inherit
 
   auth-ui-integration-test-iOS:
-    if: ${{ inputs.hostedui-ios != 'false' }}
+    if: ${{ github.event.inputs.hostedui-ios != 'false' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # iOS 26: one ASWebAuthenticationSession per simulator
+        include:
+          - name: SignIn
+            test: AuthHostedUIAppUITests/HostedUISignInTests/testSignInSuccess
+          - name: SignInWithoutPresentationAnchor
+            test: AuthHostedUIAppUITests/HostedUISignInTests/testSignInWithoutPresentationAnchorSuccess
     uses: ./.github/workflows/run_integration_tests.yml
     with:
       scheme: AuthHostedUIApp
       platform: iOS
       project_path: ./AmplifyPlugins/Auth/Tests/AuthHostedUIApp/
       resource_subfolder: auth
-      timeout-minutes: 30
-      xcode_version: '16.4.0'
+      timeout-minutes: 60
+      xcode_version: 'latest'
+      only_testing: ${{ matrix.test }}
+      job_name_suffix: ' | ${{ matrix.name }}'
     secrets: inherit
 
   auth-webauthn-integration-test-iOS:
-    if: ${{ inputs.webauthn-ios != 'false' }}
+    if: ${{ github.event.inputs.webauthn-ios != 'false' }}
     name: Auth WebAuthn Integration Tests (iOS)
     uses: ./.github/workflows/integ_test_auth_webauthn.yml
     with:
-      xcode_version: '16.4.0'
+      xcode_version: 'latest'
     secrets: inherit

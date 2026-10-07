@@ -16,7 +16,9 @@ import AWSS3
 import CryptoKit
 import XCTest
 
-class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase {
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase, @unchecked Sendable {
 
     /// Given: Multiple data object which is uploaded to a public path
     /// When: `Amplify.Storage.list` is run
@@ -33,8 +35,7 @@ class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase 
         let firstListResult = try await Amplify.Storage.list(path: .fromString(uniqueStringPath))
 
         // Validate the item was uploaded.
-        XCTAssertEqual(firstListResult.items.filter { $0.path.contains(uniqueStringPath)
-        }.count, 1)
+        XCTAssertEqual(firstListResult.items.count(where: { $0.path.contains(uniqueStringPath) }), 1)
 
         await wait {
             _ = try await Amplify.Storage.uploadData(path: .fromString(uniqueStringPath + "/test2"), data: data, options: nil).value
@@ -43,8 +44,7 @@ class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase 
         let secondListResult = try await Amplify.Storage.list(path: .fromString(uniqueStringPath))
 
         // Validate the item was uploaded.
-        XCTAssertEqual(secondListResult.items.filter { $0.path.contains(uniqueStringPath)
-        }.count, 2)
+        XCTAssertEqual(secondListResult.items.count(where: { $0.path.contains(uniqueStringPath) }), 2)
 
         // Clean up
         _ = try await Amplify.Storage.remove(path: .fromString(uniqueStringPath + "/test1"))
@@ -76,8 +76,7 @@ class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase 
         let firstListResult = try await Amplify.Storage.list(path: .fromString(uniqueStringPath))
 
         // Validate the item was uploaded.
-        XCTAssertEqual(firstListResult.items.filter { $0.path.contains(uniqueStringPath)
-        }.count, 1)
+        XCTAssertEqual(firstListResult.items.count(where: { $0.path.contains(uniqueStringPath) }), 1)
 
         await wait {
             _ = try await Amplify.Storage.uploadData(
@@ -93,8 +92,7 @@ class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase 
         let secondListResult = try await Amplify.Storage.list(path: .fromString(uniqueStringPath))
 
         // Validate the item was uploaded.
-        XCTAssertEqual(secondListResult.items.filter { $0.path.contains(uniqueStringPath)
-        }.count, 2)
+        XCTAssertEqual(secondListResult.items.count(where: { $0.path.contains(uniqueStringPath) }), 2)
 
         // clean up
         _ = try await Amplify.Storage.remove(path: .fromString(uniqueStringPath + "test1"))
@@ -127,8 +125,7 @@ class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase 
         let firstListResult = try await Amplify.Storage.list(path: .fromString(uniqueStringPath))
 
         // Validate the item was uploaded.
-        XCTAssertEqual(firstListResult.items.filter { $0.path.contains(uniqueStringPath)
-        }.count, 1)
+        XCTAssertEqual(firstListResult.items.count(where: { $0.path.contains(uniqueStringPath) }), 1)
 
         await wait {
             _ = try await Amplify.Storage.uploadData(
@@ -144,8 +141,7 @@ class AWSS3StoragePluginListObjectsIntegrationTests: AWSS3StoragePluginTestBase 
         let secondListResult = try await Amplify.Storage.list(path: .fromString(uniqueStringPath))
 
         // Validate the item was uploaded.
-        XCTAssertEqual(secondListResult.items.filter { $0.path.contains(uniqueStringPath)
-        }.count, 2)
+        XCTAssertEqual(secondListResult.items.count(where: { $0.path.contains(uniqueStringPath) }), 2)
 
         // clean up
         _ = try await Amplify.Storage.remove(path: .fromString(uniqueStringPath + "test1"))

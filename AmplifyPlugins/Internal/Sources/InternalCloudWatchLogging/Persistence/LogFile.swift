@@ -1,0 +1,76 @@
+//
+// Copyright Amazon.com Inc. or its affiliates.
+// All Rights Reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+import Foundation
+
+/// Represents an individual log file on disk used as part of a LogRotation.
+package final class LogFile {
+    package let fileURL: URL
+    package let sizeLimitInBytes: UInt64
+
+    private let handle: FileHandle
+    private var count: UInt64
+
+    /// Creates a new file with the given URL and sets its attributes accordingly.
+    package init(forWritingTo fileURL: URL, sizeLimitInBytes: UInt64) throws {
+        self.fileURL = fileURL
+        self.sizeLimitInBytes = sizeLimitInBytes
+        self.handle = try FileHandle(forWritingTo: fileURL)
+        self.count = 0
+    }
+
+    /// Opens a file for updating with the given URL and sets its attributes accordingly.
+    package init(forAppending fileURL: URL, sizeLimitInBytes: UInt64) throws {
+        self.fileURL = fileURL
+        self.sizeLimitInBytes = sizeLimitInBytes
+        self.handle = try FileHandle(forUpdating: fileURL)
+        if #available(macOS 12.0, iOS 13.4, watchOS 6.2, tvOS 13.4, *) {
+            self.count = try handle.offset()
+        } else {
+            self.count = handle.offsetInFile
+        }
+    }
+
+    deinit {
+        try? self.handle.close()
+    }
+
+    /// Returns the number of bytes available in the underlying file.
+    package var available: UInt64 {
+        if sizeLimitInBytes > count {
+            return sizeLimitInBytes - count
+        } else {
+            return 0
+        }
+    }
+
+    /// Attempts to close the underlying log file.
+    package func close() throws {
+        try handle.close()
+    }
+
+    /// Attempts to flush the receivers contents to disk.
+    package func synchronize() throws {
+        try handle.synchronize()
+    }
+
+    /// - Returns: true if writing to the underlying log file will keep its size below the limit.
+    package func hasSpace(for data: Data) -> Bool {
+        return UInt64(data.count) <= available
+    }
+
+    /// Writes the given data to the underlying log file.
+    package func write(data: Data) throws {
+        if #available(macOS 12.0, iOS 13.4, watchOS 6.2, tvOS 13.4, *) {
+            try handle.write(contentsOf: data)
+        } else {
+            handle.write(data)
+        }
+        try handle.synchronize()
+        count = count + UInt64(data.count) // swiftlint:disable:this shorthand_operator
+    }
+}

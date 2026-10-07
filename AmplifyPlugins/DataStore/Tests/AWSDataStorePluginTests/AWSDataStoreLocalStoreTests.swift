@@ -16,7 +16,9 @@ import AWSPluginsCore
 
 // swfitlint:disable file_length
 // swiftlint:disable type_body_length
-class AWSDataStoreLocalStoreTests: LocalStoreIntegrationTestBase {
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+class AWSDataStoreLocalStoreTests: LocalStoreIntegrationTestBase, @unchecked Sendable {
 
     struct TestModelRegistration: AmplifyModelRegistration {
         func registerModels(registry: ModelRegistry.Type) {
@@ -456,16 +458,14 @@ class AWSDataStoreLocalStoreTests: LocalStoreIntegrationTestBase {
         XCTAssertEqual(
             postsContainingRandomTitleNumber
                 .lazy
-                .filter { $0.status == .draft }
-                .count,
+                .count(where: { $0.status == .draft }),
             1
         )
 
         XCTAssertEqual(
             postsContainingRandomTitleNumber
                 .lazy
-                .filter { $0.status == .published }
-                .count,
+                .count(where: { $0.status == .published }),
             1
         )
 

@@ -18,7 +18,7 @@ import Foundation
 actor AppSyncRealTimeSubscription {
     static let jsonEncoder = JSONEncoder()
 
-    enum State {
+    enum State: Sendable {
         case none
         case subscribing
         case subscribed
@@ -28,7 +28,23 @@ actor AppSyncRealTimeSubscription {
     }
 
     /// internal state for tracking subscription status
-    private let state = CurrentValueSubject<State, Never>(.none)
+    ///
+    /// Boxed because `CurrentValueSubject` is not `Sendable` and `deinit` is nonisolated, so it cannot
+    /// reach actor-isolated storage in the Swift 6 language mode.
+    ///
+    /// The box is sound rather than merely convenient: `CurrentValueSubject` is documented as safe to
+    /// send values to and subscribe from concurrently, so the only thing the annotation suppresses is the
+    /// missing `Sendable` conformance, not an actual synchronization gap. The `let` also means the
+    /// reference itself never changes.
+    private nonisolated let stateBox = UncheckedSendable(CurrentValueSubject<State, Never>(.none))
+
+    private nonisolated var state: CurrentValueSubject<State, Never> {
+        stateBox.value
+    }
+
+    /// Set when subscribe() fails with a non-recoverable error (e.g. expired
+    /// auth). A terminated subscription is not resubscribed on reconnect.
+    private var isTerminated = false
 
     /// publisher for monitoring subscription status
     var publisher: AnyPublisher<State, Never> {
@@ -52,6 +68,14 @@ actor AppSyncRealTimeSubscription {
     }
 
     func subscribe() async throws {
+        // A subscription that failed with a non-recoverable error (e.g. expired
+        // auth) must not be resubscribed on reconnect, otherwise it re-hammers
+        // AppSync with a subscription that can never succeed.
+        guard !isTerminated else {
+            log.debug("[AppSyncRealTimeSubscription-\(id)] Subscription terminated, not resubscribing")
+            return
+        }
+
         guard state.value != .subscribing else {
             log.debug("[AppSyncRealTimeSubscription-\(id)] Subscription already in subscribing state")
             return
@@ -76,6 +100,11 @@ actor AppSyncRealTimeSubscription {
             }
         } catch {
             log.debug("[AppSyncRealTimeSubscription-\(id)] Failed to subscribe, error: \(error)")
+            // Only a hard auth failure is terminal. Transient errors (throttling,
+            // subscription limits) stay resumable on the next reconnect.
+            if (error as? AppSyncRealTimeRequest.Error) == .unauthorized {
+                isTerminated = true
+            }
             state.send(.failure)
             throw error
         }

@@ -44,7 +44,9 @@ extension Bytes {
     }
 }
 
-class FileSystemTests: XCTestCase {
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+class FileSystemTests: XCTestCase, @unchecked Sendable {
 
     func testMoveFile_Succeeds_WhenMoveFileExecuted() throws {
         let fs = FileSystem()
@@ -120,9 +122,25 @@ class FileSystemTests: XCTestCase {
         defer {
             fs.removeDirectoryIfExists(directoryURL: directoryURL)
         }
-        let size = fs.getFileSize(fileURL: fileURL)
+        let size = try fs.getFileSize(fileURL: fileURL)
 
         XCTAssertEqual(UInt64(bytes.bytes), size)
+    }
+
+    /// Given: A file URL that does not exist
+    /// When: getFileSize is invoked
+    /// Then: It throws `StorageError.localFileNotFound` instead of crashing
+    func testGetFileSizeForMissingFileThrowsInsteadOfCrashing() {
+        let fs = FileSystem()
+        let missingURL = fs.createTemporaryDirectoryURL()
+            .appendingPathComponent("does-not-exist.bin", isDirectory: false)
+
+        XCTAssertThrowsError(try fs.getFileSize(fileURL: missingURL)) { error in
+            guard case StorageError.localFileNotFound = error else {
+                XCTFail("Expected StorageError.localFileNotFound, got \(error)")
+                return
+            }
+        }
     }
 
     func testGeneratingZeroBytes() throws {

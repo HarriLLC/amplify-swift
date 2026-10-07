@@ -10,8 +10,11 @@ import Foundation
 import XCTest
 
 @testable import AWSCloudWatchLoggingPlugin
+@testable import InternalCloudWatchLogging
 
-final class RotatingLogBatchTests: XCTestCase {
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+final class RotatingLogBatchTests: XCTestCase, @unchecked Sendable {
     var fileURL: URL!
 
     override func setUp() async throws {
@@ -41,7 +44,8 @@ final class RotatingLogBatchTests: XCTestCase {
     /// Then: Log Entries are created from log file
     func testSuccessfullyyReadEntriesFromDisk() {
         let rotatingLogBatch = RotatingLogBatch(url: fileURL)
-        let entries = try? rotatingLogBatch.readEntries()
+        let rawEntries = try? rotatingLogBatch.readEntries()
+        let entries = rawEntries as? [LogEntry]
         XCTAssertEqual(entries?.count, 1)
         XCTAssertEqual(entries![0].category, "Auth")
         XCTAssertEqual(entries![0].logLevel.rawValue, LogLevel.error.rawValue)

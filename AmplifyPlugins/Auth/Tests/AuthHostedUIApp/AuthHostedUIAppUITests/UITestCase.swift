@@ -11,7 +11,18 @@ protocol Screen {
     var app: XCUIApplication { get }
 }
 
-class UITestCase: XCTestCase {
+extension XCUIApplication {
+    // "Continue" is no longer a button on iOS 26.
+    func consentContinueElement() -> XCUIElement {
+        descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "Continue"))
+            .firstMatch
+    }
+}
+
+// `@unchecked Sendable`: `XCTestCase` is not `Sendable`, but the test body is captured by the
+// `@Sendable` closures the API now takes. XCTest runs one test at a time.
+class UITestCase: XCTestCase, @unchecked Sendable {
     var app: XCUIApplication!
 
     override func setUp() {
